@@ -7,7 +7,17 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+// needed for global keyboard shortcuts
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h> // For glfwGetWin32Window
+#include <Windows.h>
+
+#define MY_HOTKEY_ID 137
+
+//void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
 const GLint WIDTH = 1924, HEIGHT = 1084;
+bool showOverlay = true;
 
 int main() {
     if (!glfwInit()) {
@@ -26,8 +36,6 @@ int main() {
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GL_TRUE);
     glfwWindowHint(GLFW_DECORATED, GL_FALSE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    // allow clicks to go through to desktop
-    // glfwWindowHint(GLFW_MOUSE_PASSTHROUGH, GL_TRUE);
     // always on top of everything
     glfwWindowHint(GLFW_FLOATING, GL_TRUE);
 
@@ -40,6 +48,9 @@ int main() {
         return 1;
     }
 
+    // keyboard shortcuts
+    //glfwSetKeyCallback(window, keyCallback);
+
     // set context
     glfwMakeContextCurrent(window);
 
@@ -51,28 +62,54 @@ int main() {
     glfwGetFramebufferSize(window, &bufferWidth, &bufferHeight);
     glViewport(0, 0, bufferWidth, bufferHeight);
 
+    // global keyboard shortcuts
+    // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey?redirectedfrom=MSDN
+    // https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+    HWND hwnd = glfwGetWin32Window(window); // Get native window handle
+    // Register Ctrl+Alt+T as the hotkey.
+    // Modifiers: MOD_CONTROL | MOD_ALT
+    // Virtual Key Code: 0x54 is 'T'
+    if (!RegisterHotKey(hwnd, MY_HOTKEY_ID, MOD_CONTROL | MOD_ALT, 0x54)) {
+        std::cerr << "Failed to register hotkey. Error code: " << GetLastError() << std::endl;
+        // You might want to handle this more gracefully, maybe exit or inform the user.
+    }
+    else {
+        std::cout << "Hotkey ALT+Q registered successfully.\n";
+    }
+
     // init imgui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    bool active = true;
-
     while (!glfwWindowShouldClose(window)) {
+        // Process Windows messages (specifically looking for WM_HOTKEY)
+        MSG msg = { 0 };
+        // Use PeekMessage instead of GetMessage to avoid blocking if there are no messages
+        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            std::cout << "WINDOWS: PARSING MESSAGES\n";
+            if (msg.message == WM_HOTKEY) {
+                // Check if the hotkey ID matches the one we registered
+                if (msg.wParam == MY_HOTKEY_ID) {
+                    std::cout << "!!!!!!!!! Global Hotkey pressed!\n";
+                    showOverlay = !showOverlay; // Toggle visibility
+                }
+            }
+            // Important: Translate and dispatch other messages for general Windows functionality
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+
         // get and handle user input
         glfwPollEvents();
 
-        if (active) {
-            glClearColor(1.f, 0.062f, 0.062f, 1.f);
-        }
-        else {
-            glClearColor(0, 0, 0, 0);
-        }
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // imgui stuff
@@ -80,10 +117,17 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("test window");
-        ImGui::Text("thr gunch");
-        ImGui::Checkbox("Active?", &active);
-        ImGui::End();
+        if (showOverlay) { // Only draw ImGui content if showOverlay is true
+            ImGui::Begin("test window");
+            ImGui::Text("Press Ctrl+Alt+T to toggle overlay.");
+            ImGui::End();
+
+            glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
+        }
+        else {
+            // let mouse clicks pass through our window to the desktop
+            glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_TRUE);
+        }
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -93,6 +137,9 @@ int main() {
     }
 
     // cleanup
+    UnregisterHotKey(hwnd, MY_HOTKEY_ID);
+    std::cout << "Hotkey unregistered.\n";
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -101,3 +148,9 @@ int main() {
     glfwTerminate();
     return 0;
 }
+
+//void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+//    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+//        std::cout << "!!!!!!!!!!!!!!! ESCAPE PRESSED\n";
+//    }
+//}
