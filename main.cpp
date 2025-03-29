@@ -61,10 +61,8 @@ int main() {
     // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey?redirectedfrom=MSDN
     // https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
     HWND hwnd = glfwGetWin32Window(window); // Get native window handle
-    // Register Ctrl+Alt+T as the hotkey.
-    // Modifiers: MOD_CONTROL | MOD_ALT
-    // Virtual Key Code: 0x54 is 'T'
-    if (!RegisterHotKey(hwnd, MY_HOTKEY_ID, MOD_CONTROL | MOD_ALT, 0x54)) {
+    // Register ALT + Q as a hotkey
+    if (!RegisterHotKey(hwnd, MY_HOTKEY_ID, MOD_ALT, 0x51)) {
         std::cerr << "Failed to register hotkey. Error code: " << GetLastError() << std::endl;
         // You might want to handle this more gracefully, maybe exit or inform the user.
     }
@@ -118,7 +116,7 @@ int main() {
             ImGui::SetNextWindowPos(mousePosition, ImGuiCond_Appearing);
 
             ImGui::Begin("test window");
-            ImGui::Text("Press Ctrl+Alt+T to toggle overlay.");
+            ImGui::Text("Press ALT+Q to toggle overlay.");
             ImGui::End();
 
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
