@@ -14,6 +14,8 @@
 
 #define MY_HOTKEY_ID 137
 
+#include "graphics.h"
+
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
 
@@ -56,6 +58,8 @@ int main() {
     int bufferWidth, bufferHeight;
     glfwGetFramebufferSize(window, &bufferWidth, &bufferHeight);
     glViewport(0, 0, bufferWidth, bufferHeight);
+
+    loadGraphics();
 
     // global keyboard shortcuts
     // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey?redirectedfrom=MSDN
@@ -105,6 +109,8 @@ int main() {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        drawGraphics();
+
         // imgui stuff
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -143,6 +149,8 @@ int main() {
     // cleanup
     UnregisterHotKey(hwnd, MY_HOTKEY_ID);
     std::cout << "Hotkey unregistered.\n";
+
+    destroyGraphics();
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
