@@ -112,8 +112,15 @@ int main() {
 
         if (showOverlay) {
             ImVec2 mousePosition = ImGui::GetMousePos();
-            std::cout << "screen pos: " << mousePosition.x << ", " << mousePosition.y << "\n";
-            ImGui::SetNextWindowPos(mousePosition, ImGuiCond_Appearing);
+            if (!ImGui::IsMousePosValid(&mousePosition)) {
+                ImVec2 center = ImVec2(WIDTH / 2, HEIGHT / 2);
+                std::cout << "mouse not available??\n";
+                ImGui::SetNextWindowPos(center, ImGuiCond_Appearing);
+            }
+            else {
+                std::cout << "screen pos: " << mousePosition.x << ", " << mousePosition.y << "\n";
+                ImGui::SetNextWindowPos(mousePosition, ImGuiCond_Appearing);
+            }
 
             ImGui::Begin("test window");
             ImGui::Text("Press ALT+Q to toggle overlay.");
