@@ -14,8 +14,6 @@
 
 #define MY_HOTKEY_ID 137
 
-//void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
 
@@ -47,9 +45,6 @@ int main() {
         glfwTerminate();
         return 1;
     }
-
-    // keyboard shortcuts
-    //glfwSetKeyCallback(window, keyCallback);
 
     // set context
     glfwMakeContextCurrent(window);
@@ -93,7 +88,7 @@ int main() {
         MSG msg = { 0 };
         // Use PeekMessage instead of GetMessage to avoid blocking if there are no messages
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-            std::cout << "WINDOWS: PARSING MESSAGES\n";
+            //std::cout << "WINDOWS: PARSING MESSAGES\n";
             if (msg.message == WM_HOTKEY) {
                 // Check if the hotkey ID matches the one we registered
                 if (msg.wParam == MY_HOTKEY_ID) {
@@ -117,7 +112,11 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (showOverlay) { // Only draw ImGui content if showOverlay is true
+        if (showOverlay) {
+            ImVec2 mousePosition = ImGui::GetMousePos();
+            std::cout << "screen pos: " << mousePosition.x << ", " << mousePosition.y << "\n";
+            ImGui::SetNextWindowPos(mousePosition, ImGuiCond_Appearing);
+
             ImGui::Begin("test window");
             ImGui::Text("Press Ctrl+Alt+T to toggle overlay.");
             ImGui::End();
@@ -148,9 +147,3 @@ int main() {
     glfwTerminate();
     return 0;
 }
-
-//void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-//    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-//        std::cout << "!!!!!!!!!!!!!!! ESCAPE PRESSED\n";
-//    }
-//}
