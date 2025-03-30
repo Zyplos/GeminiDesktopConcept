@@ -15,6 +15,7 @@
 #define MY_HOTKEY_ID 137
 
 #include "graphics.h"
+#include <random>
 
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
@@ -32,12 +33,14 @@ int main() {
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GL_TRUE);
     glfwWindowHint(GLFW_DECORATED, GL_FALSE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     // always on top of everything
     glfwWindowHint(GLFW_FLOATING, GL_TRUE);
+
+    
 
 
     // create window
@@ -58,6 +61,11 @@ int main() {
     int bufferWidth, bufferHeight;
     glfwGetFramebufferSize(window, &bufferWidth, &bufferHeight);
     glViewport(0, 0, bufferWidth, bufferHeight);
+
+    // https://stackoverflow.com/questions/66134141/glclearcolor-and-blending
+    // place after window creation or program crashes
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     loadGraphics();
 
@@ -85,6 +93,21 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
+    float noiseSpeed = 0.080f;
+    float perlinScale = 1.8f;
+    float lowerEdge = 0.0f;
+    float upperEdge = 1.6f;
+
+    float perlinOffsetX = 0.0f; // Start at zero offset
+    float perlinOffsetY = 0.0f; // Start at zero offset
+    float gradientOffsetX = 0.0f; // Start at zero offset
+    float gradientOffsetY = 0.0f; // Start at zero offset
+    std::random_device rd;  // Obtain a random number from hardware
+    std::mt19937 gen(rd()); // Seed the generator
+    // Define range for random offset (large values ensure different parts of noise field)
+    std::uniform_real_distribution<float> distrib(-1000.0f, 1000.0f);
+    
+
     while (!glfwWindowShouldClose(window)) {
         // Process Windows messages (specifically looking for WM_HOTKEY)
         MSG msg = { 0 };
@@ -96,6 +119,15 @@ int main() {
                 if (msg.wParam == MY_HOTKEY_ID) {
                     std::cout << "!!!!!!!!! Global Hotkey pressed!\n";
                     showOverlay = !showOverlay; // Toggle visibility
+
+                    if (showOverlay) {
+                        perlinOffsetX = distrib(gen); // Generate random X offset
+                        perlinOffsetY = distrib(gen); // Generate random Y offset
+                        gradientOffsetX = distrib(gen); // Generate random X offset
+                        gradientOffsetY = distrib(gen); // Generate random Y offset
+                        std::cout << "New Perlin Offset: (" << perlinOffsetX << ", " << perlinOffsetY << ")\n"; // Optional debug log
+                        std::cout << "New Perlin Offset: (" << gradientOffsetX << ", " << gradientOffsetY << ")\n"; // Optional debug log
+                    }
                 }
             }
             // Important: Translate and dispatch other messages for general Windows functionality
@@ -107,9 +139,11 @@ int main() {
         glfwPollEvents();
 
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        drawGraphics();
+        if (showOverlay) {
+            drawGraphics(noiseSpeed, perlinScale, lowerEdge, upperEdge, perlinOffsetX, perlinOffsetY, gradientOffsetX, gradientOffsetY, bufferWidth, bufferHeight);
+        }
 
         // imgui stuff
         ImGui_ImplOpenGL3_NewFrame();
@@ -124,12 +158,19 @@ int main() {
                 ImGui::SetNextWindowPos(center, ImGuiCond_Appearing);
             }
             else {
-                std::cout << "screen pos: " << mousePosition.x << ", " << mousePosition.y << "\n";
+                //std::cout << "screen pos: " << mousePosition.x << ", " << mousePosition.y << "\n";
                 ImGui::SetNextWindowPos(mousePosition, ImGuiCond_Appearing);
             }
 
             ImGui::Begin("test window");
             ImGui::Text("Press ALT+Q to toggle overlay.");
+            // 12 is a nice enough value
+            ImGui::DragFloat("Noise Speed", &noiseSpeed, 0.0f, 0.01f); // Min 0, Max 10
+            ImGui::SliderFloat("Perlin Scale", &perlinScale, 1.0f, 20.0f);
+            ImGui::SliderFloat("Lower Edge", &lowerEdge, 0.0f, 1.0f);
+            ImGui::SliderFloat("Upper Edge", &upperEdge, 0.0f, 1.0f);
+            ImGui::Text("Perlin Offset: (%.1f, %.1f)", perlinOffsetX, perlinOffsetY);
+            ImGui::Text("Gradient Offset: (%.1f, %.1f)", gradientOffsetX, gradientOffsetY);
             ImGui::End();
 
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
