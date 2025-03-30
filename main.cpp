@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector> // Make sure vector is included here too if needed elsewhere
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -77,6 +78,7 @@ int main() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     loadGraphics();
+    loadCursorGraphics();
 
     // global keyboard shortcuts
     // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey?redirectedfrom=MSDN
@@ -156,6 +158,14 @@ int main() {
 
                         std::cout << "Reveal Start: t=" << revealStartTime
                             << " Pos=(" << revealMouseX << ", " << revealMouseY << ")\n";
+
+                        // --- CAPTURE CURSOR ---
+                        if (!captureCursorTexture()) {
+                            std::cerr << "Failed to capture cursor texture on overlay show." << std::endl;
+                            // Decide how to handle: maybe don't show overlay? or show without cursor?
+                            // For now, we just log the error. drawCursor will check if texture is valid.
+                        }
+                        // --- END CAPTURE CURSOR ---
                     }
                     else {
                         revealStartTime = -10.0f; // Or just leave it
@@ -180,6 +190,8 @@ int main() {
                 revealStartTime, revealMouseX, revealMouseY, REVEAL_DURATION,
                 bufferWidth, bufferHeight
             );
+
+            drawCursor(revealMouseX, revealMouseY, WIDTH, HEIGHT);
         }
 
         // imgui stuff
@@ -189,6 +201,7 @@ int main() {
 
         if (showOverlay) {
             ImVec2 mousePosition = ImGui::GetMousePos();
+            mousePosition.x += 20;
             if (!ImGui::IsMousePosValid(&mousePosition)) {
                 ImVec2 center = ImVec2(WIDTH / 2, HEIGHT / 2);
                 std::cout << "mouse not available??\n";
@@ -228,6 +241,7 @@ int main() {
     UnregisterHotKey(hwnd, MY_HOTKEY_ID);
     std::cout << "Hotkey unregistered.\n";
 
+    destroyCursorGraphics(); // <-- NEW: Destroy cursor resources
     destroyGraphics();
 
     ImGui_ImplOpenGL3_Shutdown();
