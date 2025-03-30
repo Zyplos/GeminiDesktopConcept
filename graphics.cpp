@@ -77,7 +77,7 @@ const char* fragmentShaderSource = R"(
 
     // --- Easing Function (Cubic Ease-Out) --- <-- NEW HELPER
     float easeOutCubic(float t) {
-      return 1.0 - pow(1.0 - t, 5.0);
+      return 1.0 - pow(1.0 - t, 2.0);
     }
 
     void main()

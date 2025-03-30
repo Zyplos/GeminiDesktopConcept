@@ -27,7 +27,7 @@ bool showOverlay = true;
 float revealStartTime = -10.0f; // Time overlay was last shown (-ve means inactive)
 float revealMouseX = 0.5f;    // Mouse X at reveal (normalized 0-1)
 float revealMouseY = 0.5f;    // Mouse Y at reveal (normalized 0-1)
-const float REVEAL_DURATION = 5.f; // Duration of the effect in seconds <-- NEW
+const float REVEAL_DURATION = 3.f; // Duration of the effect in seconds <-- NEW
 
 int main() {
     if (!glfwInit()) {
