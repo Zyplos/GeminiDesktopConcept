@@ -11,14 +11,23 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h> // For glfwGetWin32Window
 #include <Windows.h>
+// windows messes with these?
+#undef max
+#undef min
 
 #define MY_HOTKEY_ID 137
 
 #include "graphics.h"
 #include <random>
+#include <algorithm>
 
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
+
+float revealStartTime = -10.0f; // Time overlay was last shown (-ve means inactive)
+float revealMouseX = 0.5f;    // Mouse X at reveal (normalized 0-1)
+float revealMouseY = 0.5f;    // Mouse Y at reveal (normalized 0-1)
+const float REVEAL_DURATION = 5.f; // Duration of the effect in seconds <-- NEW
 
 int main() {
     if (!glfwInit()) {
@@ -127,6 +136,29 @@ int main() {
                         gradientOffsetY = distrib(gen); // Generate random Y offset
                         std::cout << "New Perlin Offset: (" << perlinOffsetX << ", " << perlinOffsetY << ")\n"; // Optional debug log
                         std::cout << "New Perlin Offset: (" << gradientOffsetX << ", " << gradientOffsetY << ")\n"; // Optional debug log
+
+
+
+                        // Just became visible: Start reveal animation
+                        revealStartTime = (float)glfwGetTime();
+
+                        // Get mouse pos in screen coordinates (pixels, top-left origin)
+                        double mouseX_pixels, mouseY_pixels;
+                        glfwGetCursorPos(window, &mouseX_pixels, &mouseY_pixels);
+
+                        // Normalize to [0, 1] range (bottom-left origin for shader TexCoords)
+                        revealMouseX = (float)(mouseX_pixels / WIDTH);
+                        revealMouseY = 1.0f - (float)(mouseY_pixels / HEIGHT); // Flip Y
+
+                        // Clamp to ensure it's within [0, 1] even if cursor is off-window slightly
+                        revealMouseX = std::max(0.0f, std::min(1.0f, revealMouseX));
+                        revealMouseY = std::max(0.0f, std::min(1.0f, revealMouseY));
+
+                        std::cout << "Reveal Start: t=" << revealStartTime
+                            << " Pos=(" << revealMouseX << ", " << revealMouseY << ")\n";
+                    }
+                    else {
+                        revealStartTime = -10.0f; // Or just leave it
                     }
                 }
             }
@@ -142,7 +174,12 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (showOverlay) {
-            drawGraphics(noiseSpeed, perlinScale, lowerEdge, upperEdge, perlinOffsetX, perlinOffsetY, gradientOffsetX, gradientOffsetY, bufferWidth, bufferHeight);
+            drawGraphics(
+                noiseSpeed, perlinScale, lowerEdge, upperEdge,
+                perlinOffsetX, perlinOffsetY, gradientOffsetX, gradientOffsetY,
+                revealStartTime, revealMouseX, revealMouseY, REVEAL_DURATION,
+                bufferWidth, bufferHeight
+            );
         }
 
         // imgui stuff

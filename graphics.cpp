@@ -36,6 +36,11 @@ const char* fragmentShaderSource = R"(
     uniform vec2 u_perlinOffset;
     uniform vec2 u_gradientOffset;
 
+    /// --- Reveal Effect Uniforms --- <-- NEW
+    uniform float u_revealStartTime; // Time the current reveal started
+    uniform vec2 u_revealCenter;     // Mouse position at reveal start [0, 1]
+    uniform float u_revealDuration;  // Duration of the reveal effect (e.g., 3.0s)
+
     // --- Simplex Noise Functions (remain the same) ---
     vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
     vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -68,6 +73,11 @@ const char* fragmentShaderSource = R"(
     // Based on Book of Shaders examples
     float random(vec2 st) {
         return fract(sin(st.x * 12.9898 + st.y * 78.233) * 43758.5453);
+    }
+
+    // --- Easing Function (Cubic Ease-Out) --- <-- NEW HELPER
+    float easeOutCubic(float t) {
+      return 1.0 - pow(1.0 - t, 5.0);
     }
 
     void main()
@@ -112,12 +122,56 @@ const char* fragmentShaderSource = R"(
         vec3 colorEnd   = vec3(0.41, 0.56, 1);
         // Mix color based on the independent gradient noise value
         vec3 perlinGradientColor = mix(colorStart, colorEnd, mappedGradientPerlin);
+        vec3 baseFinalColor = perlinGradientColor * randomNoiseValue; // Base color before bloom
 
-        // --- Combine ---
-        // Modulate the gradient color by the random noise value
-        vec3 finalColor = perlinGradientColor * randomNoiseValue;
-        // Use the calculated gradient color and the maskAlpha derived from mask noise
-        FragColor = vec4(finalColor, maskAlpha);
+        float baseMaskAlpha = smoothstep(u_lowerEdge, u_upperEdge, mappedMaskPerlin) * 0.8; // Base alpha before reveal
+
+        // --- Circular Reveal Fade-In & Bloom Calculation --- <-- NEW SECTION
+        float revealAlpha = 1.0; // Default to fully visible
+        vec3 bloomEffect = vec3(0.0); // Default to no bloom
+
+        float elapsedTime = u_time - u_revealStartTime;
+
+        if (elapsedTime >= 0.0 && elapsedTime < u_revealDuration) {
+            // Animation is active
+
+            // 1. Calculate normalized linear progress (0 to 1)
+            float linearProgress = elapsedTime / u_revealDuration;
+
+            // 2. Apply easing function to the progress <-- NEW STEP
+            float easedProgress = easeOutCubic(linearProgress);
+
+            // 3. Calculate distance from current pixel to reveal center
+            float dist = distance(TexCoords, u_revealCenter);
+
+            // 4. Define the radius of the *transparent* circle expanding outwards
+            float maxVisibleRadius = 1.5;
+            float currentRadius = easedProgress * maxVisibleRadius; // Use eased progress for radius <-- MODIFIED
+
+            // 5. Calculate reveal alpha: Fade in from edges (transparent circle expands)
+            float revealEdgeWidth = 0.1;
+            revealAlpha = 1.0 - smoothstep(currentRadius - revealEdgeWidth, currentRadius + revealEdgeWidth, dist);
+
+            // 6. Calculate Bloom: Brightest near the edge (dist ~ currentRadius)
+            float bloomEdgeWidth = 0.15;
+            float distToEdge = abs(dist - currentRadius);
+            float bloomAmount = (1.0 - smoothstep(0.0, bloomEdgeWidth, distToEdge));
+            // Fade bloom in/out using eased progress for potentially smoother feel
+            // The parabola shape still works well here: peaks at progress=0.5
+            bloomAmount *= easedProgress * (1.0 - easedProgress) * 4.0; // Use easedProgress
+
+            vec3 bloomColor = vec3(1.8, 1.8, 2.0);
+            bloomEffect = bloomColor * bloomAmount * revealAlpha;
+
+        }
+        // --- End Reveal Calculation ---
+
+
+        // --- Combine Final Color & Alpha ---
+        vec3 finalColor = baseFinalColor + bloomEffect; // Add bloom to base color
+        float finalAlpha = baseMaskAlpha * revealAlpha; // Combine Perlin alpha and reveal alpha
+
+        FragColor = vec4(finalColor, finalAlpha);
     }
 )";
 
@@ -128,6 +182,9 @@ GLint perlinScaleLocation;
 GLint upperEdgeLocation; 
 GLint lowerEdgeLocation;
 GLint perlinOffsetLocation;
+GLint revealStartTimeLocation; // <-- NEW
+GLint revealCenterLocation;    // <-- NEW
+GLint revealDurationLocation;  // <-- NEW
 
 void loadGraphics() {
     // Create Vertex Shader Object and get its reference
@@ -235,26 +292,40 @@ void loadGraphics() {
     upperEdgeLocation = glGetUniformLocation(shaderProgram, "u_upperEdge");
     lowerEdgeLocation = glGetUniformLocation(shaderProgram, "u_lowerEdge");
     perlinOffsetLocation = glGetUniformLocation(shaderProgram, "u_perlinOffset");
+    revealStartTimeLocation = glGetUniformLocation(shaderProgram, "u_revealStartTime");
+    revealCenterLocation = glGetUniformLocation(shaderProgram, "u_revealCenter");
+    revealDurationLocation = glGetUniformLocation(shaderProgram, "u_revealDuration");
 
-    // Check if uniforms were found (optional but good practice)
+    // Update error check
     if (timeLocation == -1 || noiseSpeedLocation == -1 || perlinScaleLocation == -1 ||
-        upperEdgeLocation == -1 || lowerEdgeLocation == -1 || perlinOffsetLocation == -1) {
+        upperEdgeLocation == -1 || lowerEdgeLocation == -1 || perlinOffsetLocation == -1 ||
+        revealStartTimeLocation == -1 || revealCenterLocation == -1 || revealDurationLocation == -1) { // <-- Check reveal uniforms
         std::cerr << "Warning: One or more uniforms not found in shader!" << std::endl;
     }
 }
 
-void drawGraphics(float noiseSpeed, float perlinScale, float lowerEdge, float upperEdge, float perlinOffsetX, float perlinOffsetY, float gradientOffsetX, float gradientOffsetY, int bufferWidth, int bufferHeight) {
+// Modify drawGraphics signature to accept reveal parameters <-- MODIFIED SIGNATURE
+void drawGraphics(
+    float noiseSpeed, float perlinScale, float lowerEdge, float upperEdge,
+    float perlinOffsetX, float perlinOffsetY, float gradientOffsetX, float gradientOffsetY,
+    float revealStartTime, float revealMouseX, float revealMouseY, float revealDuration, // NEW PARAMS
+    int bufferWidth, int bufferHeight
+) {
     glUseProgram(shaderProgram);
 
     // 2. Update the time uniform
     float currentTime = (float)glfwGetTime();
-    //std::cout << "Current Time: " << currentTime << std::endl;
+    //std::cout << "Current Time: " << revealStartTime << std::endl;
     glUniform1f(timeLocation, currentTime);
     glUniform1f(noiseSpeedLocation, noiseSpeed);
     glUniform1f(perlinScaleLocation, perlinScale);
     glUniform1f(upperEdgeLocation, upperEdge);
     glUniform1f(lowerEdgeLocation, lowerEdge);
     glUniform2f(perlinOffsetLocation, perlinOffsetX, perlinOffsetY);
+
+    glUniform1f(revealStartTimeLocation, revealStartTime);
+    glUniform2f(revealCenterLocation, revealMouseX, revealMouseY);
+    glUniform1f(revealDurationLocation, revealDuration);
 
     // Bind the VAO so OpenGL knows to use it
     glBindVertexArray(VAO);
