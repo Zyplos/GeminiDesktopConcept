@@ -8,10 +8,8 @@
 void loadGraphics();
 
 void drawGraphics(
-    float noiseSpeed, float perlinScale, float lowerEdge, float upperEdge,
-    float perlinOffsetX, float perlinOffsetY, float gradientOffsetX, float gradientOffsetY,
-    float revealStartTime, float revealMouseX, float revealMouseY, float revealDuration, // NEW PARAMS
-    int bufferWidth, int bufferHeight
+    float simplexOffsetX, float simplexOffsetY,
+    float revealStartTime, float revealMouseX, float revealMouseY
 );
 
 void destroyGraphics();

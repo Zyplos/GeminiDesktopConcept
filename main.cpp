@@ -24,11 +24,6 @@
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
 
-float revealStartTime = -10.0f; // Time overlay was last shown (-ve means inactive)
-float revealMouseX = 0.5f;    // Mouse X at reveal (normalized 0-1)
-float revealMouseY = 0.5f;    // Mouse Y at reveal (normalized 0-1)
-const float REVEAL_DURATION = 3.f; // Duration of the effect in seconds <-- NEW
-
 int main() {
     if (!glfwInit()) {
         std::cout << "GLFW failed\n";
@@ -48,9 +43,6 @@ int main() {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     // always on top of everything
     glfwWindowHint(GLFW_FLOATING, GL_TRUE);
-
-    
-
 
     // create window
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Test Window", NULL, NULL);
@@ -102,21 +94,18 @@ int main() {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-    float noiseSpeed = 0.080f;
-    float perlinScale = 1.8f;
-    float lowerEdge = 0.0f;
-    float upperEdge = 1.6f;
-
-    float perlinOffsetX = 0.0f; // Start at zero offset
-    float perlinOffsetY = 0.0f; // Start at zero offset
-    float gradientOffsetX = 0.0f; // Start at zero offset
-    float gradientOffsetY = 0.0f; // Start at zero offset
+    // ===== shader variables
+    float simplexOffsetX = 0.0f;
+    float simplexOffsetY = 0.0f;
+    float revealStartTime = -10.0f; // Time overlay was last shown (-ve means inactive)
+    float revealMouseX = 0.5f;    // Mouse X at reveal (normalized 0-1)
+    float revealMouseY = 0.5f;    // Mouse Y at reveal (normalized 0-1)
     std::random_device rd;  // Obtain a random number from hardware
     std::mt19937 gen(rd()); // Seed the generator
     // Define range for random offset (large values ensure different parts of noise field)
     std::uniform_real_distribution<float> distrib(-1000.0f, 1000.0f);
     
-
+    // ===== MAIN DRAW LOOP
     while (!glfwWindowShouldClose(window)) {
         // Process Windows messages (specifically looking for WM_HOTKEY)
         MSG msg = { 0 };
@@ -130,14 +119,9 @@ int main() {
                     showOverlay = !showOverlay; // Toggle visibility
 
                     if (showOverlay) {
-                        perlinOffsetX = distrib(gen); // Generate random X offset
-                        perlinOffsetY = distrib(gen); // Generate random Y offset
-                        gradientOffsetX = distrib(gen); // Generate random X offset
-                        gradientOffsetY = distrib(gen); // Generate random Y offset
-                        std::cout << "New Perlin Offset: (" << perlinOffsetX << ", " << perlinOffsetY << ")\n"; // Optional debug log
-                        std::cout << "New Perlin Offset: (" << gradientOffsetX << ", " << gradientOffsetY << ")\n"; // Optional debug log
-
-
+                        simplexOffsetX = distrib(gen); // Generate random X offset
+                        simplexOffsetY = distrib(gen); // Generate random Y offset
+                        std::cout << "New simplex offset: (" << simplexOffsetX << ", " << simplexOffsetY << ")\n"; // Optional debug log
 
                         // Just became visible: Start reveal animation
                         revealStartTime = (float)glfwGetTime();
@@ -156,8 +140,7 @@ int main() {
 
                         std::cout << "Reveal Start: t=" << revealStartTime
                             << " Pos=(" << revealMouseX << ", " << revealMouseY << ")\n";
-                    }
-                    else {
+                    } else {
                         revealStartTime = -10.0f; // Or just leave it
                     }
                 }
@@ -175,10 +158,8 @@ int main() {
 
         if (showOverlay) {
             drawGraphics(
-                noiseSpeed, perlinScale, lowerEdge, upperEdge,
-                perlinOffsetX, perlinOffsetY, gradientOffsetX, gradientOffsetY,
-                revealStartTime, revealMouseX, revealMouseY, REVEAL_DURATION,
-                bufferWidth, bufferHeight
+                simplexOffsetX, simplexOffsetY,
+                revealStartTime, revealMouseX, revealMouseY
             );
         }
 
@@ -201,13 +182,7 @@ int main() {
 
             ImGui::Begin("test window");
             ImGui::Text("Press ALT+Q to toggle overlay.");
-            // 12 is a nice enough value
-            ImGui::DragFloat("Noise Speed", &noiseSpeed, 0.0f, 0.01f); // Min 0, Max 10
-            ImGui::SliderFloat("Perlin Scale", &perlinScale, 1.0f, 20.0f);
-            ImGui::SliderFloat("Lower Edge", &lowerEdge, 0.0f, 1.0f);
-            ImGui::SliderFloat("Upper Edge", &upperEdge, 0.0f, 1.0f);
-            ImGui::Text("Perlin Offset: (%.1f, %.1f)", perlinOffsetX, perlinOffsetY);
-            ImGui::Text("Gradient Offset: (%.1f, %.1f)", gradientOffsetX, gradientOffsetY);
+            ImGui::Text("Simplex Offset: (%.1f, %.1f)", simplexOffsetX, simplexOffsetY);
             ImGui::End();
 
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
