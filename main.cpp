@@ -20,9 +20,12 @@
 #include "graphics.h"
 #include <random>
 #include <algorithm>
+#include <string>
+#include "keyboard.h"
 
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
+std::string clipboardText = "";
 
 int main() {
     if (!glfwInit()) {
@@ -82,6 +85,7 @@ int main() {
     else {
         std::cout << "Hotkey ALT+Q registered successfully.\n";
     }
+    AddClipboardFormatListener(hwnd);
 
     // init imgui
     IMGUI_CHECKVERSION();
@@ -143,7 +147,7 @@ int main() {
     std::mt19937 gen(rd()); // Seed the generator
     // Define range for random offset (large values ensure different parts of noise field)
     std::uniform_real_distribution<float> distrib(-1000.0f, 1000.0f);
-    
+
     // ===== MAIN DRAW LOOP
     while (!glfwWindowShouldClose(window)) {
         // Process Windows messages (specifically looking for WM_HOTKEY)
@@ -179,6 +183,9 @@ int main() {
 
                         std::cout << "Reveal Start: t=" << revealStartTime
                             << " Pos=(" << revealMouseX << ", " << revealMouseY << ")\n";
+
+                        clipboardText = getFinalClipboardString(hwnd);
+                        std::cout << clipboardText << std::endl;
                     } else {
                         revealStartTime = -10.0f; // Or just leave it
                     }
@@ -211,7 +218,7 @@ int main() {
             ImVec2 mousePosition = ImGui::GetMousePos();
             if (!ImGui::IsMousePosValid(&mousePosition)) {
                 ImVec2 center = ImVec2(WIDTH / 2, HEIGHT / 2);
-                std::cout << "mouse not available??\n";
+                //std::cout << "mouse not available??\n";
                 ImGui::SetNextWindowPos(center, ImGuiCond_Appearing);
             }
             else {
@@ -224,6 +231,13 @@ int main() {
 
             ImGui::Text("Press ALT+Q to toggle overlay.");
             ImGui::Text("Simplex Offset: (%.1f, %.1f)", simplexOffsetX, simplexOffsetY);
+            ImGui::Text("CLIPBOARD");
+            if (clipboardText.empty()) {
+                ImGui::Text("!!! NO TEXT");
+            }
+            else {
+                ImGui::Text("%s", clipboardText.c_str());
+            }
             ImGui::PopFont();
             ImGui::End();
 
@@ -244,6 +258,7 @@ int main() {
     // cleanup
     UnregisterHotKey(hwnd, MY_HOTKEY_ID);
     std::cout << "Hotkey unregistered.\n";
+    RemoveClipboardFormatListener(hwnd);
 
     destroyGraphics();
 
