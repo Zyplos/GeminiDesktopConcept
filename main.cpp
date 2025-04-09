@@ -200,6 +200,9 @@ int main() {
     std::mt19937 gen(rd()); // Seed the generator
     // Define range for random offset (large values ensure different parts of noise field)
     std::uniform_real_distribution<float> distrib(-1000.0f, 1000.0f);
+
+    double startMouseX = 0;
+    double startMouseY = 0;
     
     // ===== MAIN DRAW LOOP
     while (!glfwWindowShouldClose(window)) {
@@ -223,12 +226,11 @@ int main() {
                         revealStartTime = (float)glfwGetTime();
 
                         // Get mouse pos in screen coordinates (pixels, top-left origin)
-                        double mouseX_pixels, mouseY_pixels;
-                        glfwGetCursorPos(window, &mouseX_pixels, &mouseY_pixels);
+                        glfwGetCursorPos(window, &startMouseX, &startMouseY);
 
                         // Normalize to [0, 1] range (bottom-left origin for shader TexCoords)
-                        revealMouseX = (float)(mouseX_pixels / WIDTH);
-                        revealMouseY = 1.0f - (float)(mouseY_pixels / HEIGHT); // Flip Y
+                        revealMouseX = (float)(startMouseX / WIDTH);
+                        revealMouseY = 1.0f - (float)(startMouseY / HEIGHT); // Flip Y
 
                         // Clamp to ensure it's within [0, 1] even if cursor is off-window slightly
                         revealMouseX = std::max(0.0f, std::min(1.0f, revealMouseX));
@@ -267,16 +269,8 @@ int main() {
         ImGui::NewFrame();
 
         if (showOverlay) {
-            ImVec2 mousePosition = ImGui::GetMousePos();
-            if (!ImGui::IsMousePosValid(&mousePosition)) {
-                ImVec2 center = ImVec2(WIDTH / 2, HEIGHT / 2);
-                std::cout << "mouse not available??\n";
-                ImGui::SetNextWindowPos(center, ImGuiCond_Appearing);
-            }
-            else {
-                //std::cout << "screen pos: " << mousePosition.x << ", " << mousePosition.y << "\n";
-                ImGui::SetNextWindowPos(mousePosition, ImGuiCond_Appearing);
-            }
+            ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY), ImGuiCond_Appearing);
+
 
             ImGui::PushFont(font1);
             ImGui::Begin("test window", NULL, windowFlags);
