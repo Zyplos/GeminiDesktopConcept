@@ -23,6 +23,63 @@
 
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
+std::string clipboardText = "";
+
+// gemini made this thank you
+std::string getClipboardText() {
+    if (!OpenClipboard(nullptr)) {
+        return ""; // Error or clipboard busy
+    }
+
+    // CF_TEXT exists and uses normal strings but will not get unicode characters
+    std::wstring wideClipboardText = L"";
+    if (IsClipboardFormatAvailable(CF_UNICODETEXT)) {
+        HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+        if (hData != nullptr) {
+            wchar_t* pText = static_cast<wchar_t*>(GlobalLock(hData));
+            if (pText != nullptr) {
+                try {
+                    wideClipboardText = pText;
+                }
+                catch (const std::bad_alloc&) {
+                    // Handle memory allocation failure if necessary
+                    wideClipboardText = L"";
+                }
+                GlobalUnlock(hData);
+            }
+        }
+    }
+    CloseClipboard();
+
+    if (wideClipboardText.empty()) {
+        return std::string();
+    }
+
+    // https://learn.microsoft.com/en-us/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte?redirectedfrom=MSDN
+    // Determine the required buffer size for the UTF-8 string
+    // CP_UTF8: Use the UTF-8 code page
+    // 0: Default flags
+    // wstr.c_str(): Pointer to the wide-character string
+    // -1: Indicates the string is null-terminated, let the function calculate the length
+    // NULL: No buffer provided yet, we're asking for the size
+    // 0: Buffer size is 0
+    // NULL: Not using default char
+    // NULL: Not tracking if default char was used
+    int newStringSize = WideCharToMultiByte(CP_UTF8, 0, wideClipboardText.c_str(), -1, NULL, 0, NULL, NULL);
+    if (newStringSize == 0) return "";
+
+    std::string clipboardText;
+    clipboardText.resize(newStringSize);
+
+    int result = WideCharToMultiByte(CP_UTF8, 0, wideClipboardText.c_str(), -1, &clipboardText[0], newStringSize, NULL, NULL);
+    // error converting wstring to string
+    if (result == 0) return "";
+
+    clipboardText.pop_back();
+
+    return clipboardText;
+}
+
 
 int main() {
     if (!glfwInit()) {
@@ -179,6 +236,8 @@ int main() {
 
                         std::cout << "Reveal Start: t=" << revealStartTime
                             << " Pos=(" << revealMouseX << ", " << revealMouseY << ")\n";
+
+                        clipboardText = getClipboardText();
                     } else {
                         revealStartTime = -10.0f; // Or just leave it
                     }
@@ -224,6 +283,14 @@ int main() {
 
             ImGui::Text("Press ALT+Q to toggle overlay.");
             ImGui::Text("Simplex Offset: (%.1f, %.1f)", simplexOffsetX, simplexOffsetY);
+            ImGui::Text("CLIPBOARD");
+            if (clipboardText.empty()) {
+                ImGui::Text("!!! NO TEXT");
+            }
+            else {
+                ImGui::Text("%s", clipboardText.c_str());
+            }
+
             ImGui::PopFont();
             ImGui::End();
 
