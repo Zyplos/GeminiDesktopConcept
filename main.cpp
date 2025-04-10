@@ -146,7 +146,9 @@ int main() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.Fonts->AddFontDefault();
-    ImFont* font1 = io.Fonts->AddFontFromFileTTF("Outfit-Regular.ttf", 20.0f);
+    ImFont* FontBodyRegular = io.Fonts->AddFontFromFileTTF("Outfit-Regular.ttf", 20.0f);
+    ImFont* FontBodyBold = io.Fonts->AddFontFromFileTTF("Outfit-Bold.ttf", 20.0f);
+    ImFont* FontDisplayRegular = io.Fonts->AddFontFromFileTTF("Outfit-Regular.ttf", 32.0f);
 
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -182,6 +184,7 @@ int main() {
     ImGuiWindowFlags windowFlags = 0;
     windowFlags |= ImGuiWindowFlags_NoMove;
     windowFlags |= ImGuiWindowFlags_NoTitleBar;
+    windowFlags |= ImGuiWindowFlags_NoScrollbar;
     windowFlags |= ImGuiWindowFlags_NoMove;
     windowFlags |= ImGuiWindowFlags_NoResize;
     windowFlags |= ImGuiWindowFlags_NoCollapse;
@@ -203,6 +206,13 @@ int main() {
 
     double startMouseX = 0;
     double startMouseY = 0;
+    float guiWindowWidth = 500;
+    float guiWindowHeight = 175;
+    float guiWindowMargin = 10;
+
+    std::string longString = "With its long, thin wings, it catches updrafts and flies like a glider high up into the sky. Should one of the six be lost, the next morning there will once more be six. It is so dense, while on a run it forgets why it started running in the first place.";
+
+    std::string shortString = "When flames drip from its nose, that means it has a cold.";
     
     // ===== MAIN DRAW LOOP
     while (!glfwWindowShouldClose(window)) {
@@ -239,6 +249,8 @@ int main() {
                         std::cout << "Reveal Start: t=" << revealStartTime
                             << " Pos=(" << revealMouseX << ", " << revealMouseY << ")\n";
 
+                        // this function effectively only runs once in the loop
+                        // so this should be fine...
                         clipboardText = getClipboardText();
                     } else {
                         revealStartTime = -10.0f; // Or just leave it
@@ -268,22 +280,64 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        // ===== MAIN GUI STUFF
         if (showOverlay) {
+            // prompt display window
+            ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+            ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY - guiWindowHeight - guiWindowMargin), ImGuiCond_Appearing);
+            ImGui::Begin("prompt preview", NULL, windowFlags);
+
+            ImGui::PushFont(FontBodyBold);
+            ImGui::Text("Clipboard");
+            ImGui::PopFont();
+
+            ImGui::PushFont(FontDisplayRegular);
+            ImGui::TextWrapped(longString.c_str());
+            ImGui::PopFont();
+            ImGui::End();
+            
+
+            // options window
             ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY), ImGuiCond_Appearing);
+            ImGui::Begin("edit options", NULL, windowFlags);
 
+            ImGui::PushFont(FontBodyBold);
+            //ImGui::Separator();
+            ImGui::Text("Edit Text");
+            //ImGui::SeparatorText("Edit Text");
+            ImGui::PopFont();
 
-            ImGui::PushFont(font1);
-            ImGui::Begin("test window", NULL, windowFlags);
+            ImGui::PushFont(FontBodyRegular);
 
-            ImGui::Text("Press ALT+Q to toggle overlay.");
-            ImGui::Text("Simplex Offset: (%.1f, %.1f)", simplexOffsetX, simplexOffsetY);
-            ImGui::Text("CLIPBOARD");
-            if (clipboardText.empty()) {
+            /*
+            if api returns 1 option: replace clipboard
+            more than 2 show a selection thing
+            */
+            ImGui::Text("Synonyms for...");
+            ImGui::Text("Rephrase...");
+            ImGui::Text("Rewrite formally...");
+            ImGui::Text("Antonyms for...");
+            ImGui::Text("Ungarble...");
+
+            ImGui::PushFont(FontBodyBold);
+            //ImGui::SeparatorText("Reformat into a...");
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::Text("Reformat into a...");
+            ImGui::PopFont();
+
+            ImGui::Text("Headline");
+            ImGui::Text("Tagline");
+            ImGui::Text("One word phrase");
+            ImGui::Text("Two word phrase");
+
+            /*if (clipboardText.empty()) {
                 ImGui::Text("!!! NO TEXT");
             }
             else {
                 ImGui::Text("%s", clipboardText.c_str());
-            }
+            }*/
 
             ImGui::PopFont();
             ImGui::End();
