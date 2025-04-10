@@ -156,13 +156,15 @@ int main() {
     style.WindowPadding = ImVec2(16.0f, 16.0f);;
     style.WindowRounding = 8.0f;
     style.ChildRounding = 8.0f;
-    style.FrameRounding = 12.0f;
+    style.FrameRounding = 8.0f;
     style.PopupRounding = 8.0f;
     style.ScrollbarRounding = 12.0f;
     style.GrabRounding = 12.0f;
+    style.AntiAliasedLines = true;
+    style.AntiAliasedFill = true;
 
     ImVec4* colors = ImGui::GetStyle().Colors;
-    colors[ImGuiCol_WindowBg] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
+    colors[ImGuiCol_WindowBg] = colors[ImGuiCol_Button] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
     colors[ImGuiCol_Border] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
     colors[ImGuiCol_FrameBg] = ImVec4(0.21f, 0.22f, 0.25f, 0.54f);
     colors[ImGuiCol_FrameBgHovered] = ImVec4(0.42f, 0.46f, 0.52f, 0.54f);
@@ -173,18 +175,24 @@ int main() {
     colors[ImGuiCol_CheckMark] = ImVec4(0.68f, 0.78f, 0.97f, 1.00f);
     colors[ImGuiCol_SliderGrab] = ImVec4(0.47f, 0.50f, 0.54f, 1.00f);
     colors[ImGuiCol_SliderGrabActive] = ImVec4(0.68f, 0.78f, 0.97f, 1.00f);
-    colors[ImGuiCol_Button] = ImVec4(0.27f, 0.28f, 0.30f, 1.00f);
+    //colors[ImGuiCol_Button] = ImVec4(0.27f, 0.28f, 0.30f, 1.00f);
     colors[ImGuiCol_ButtonHovered] = ImVec4(0.35f, 0.37f, 0.40f, 1.00f);
     colors[ImGuiCol_ButtonActive] = ImVec4(0.40f, 0.43f, 0.48f, 1.00f);
     colors[ImGuiCol_Header] = ImVec4(0.07f, 0.07f, 0.07f, 1.00f);
     colors[ImGuiCol_HeaderHovered] = ImVec4(0.15f, 0.16f, 0.16f, 1.00f);
     colors[ImGuiCol_HeaderActive] = ImVec4(0.24f, 0.25f, 0.27f, 1.00f);
     colors[ImGuiCol_DragDropTarget] = ImVec4(0.15f, 0.45f, 1.00f, 0.90f);
+    colors[ImGuiCol_TextDisabled] = ImVec4(0.69f, 0.69f, 0.69f, 1.00f);
+
+
+
+
 
     ImGuiWindowFlags windowFlags = 0;
     windowFlags |= ImGuiWindowFlags_NoMove;
     windowFlags |= ImGuiWindowFlags_NoTitleBar;
     windowFlags |= ImGuiWindowFlags_NoScrollbar;
+    windowFlags |= ImGuiWindowFlags_NoScrollWithMouse;
     windowFlags |= ImGuiWindowFlags_NoMove;
     windowFlags |= ImGuiWindowFlags_NoResize;
     windowFlags |= ImGuiWindowFlags_NoCollapse;
@@ -285,18 +293,28 @@ int main() {
             // prompt display window
             ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
             ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY - guiWindowHeight - guiWindowMargin), ImGuiCond_Appearing);
-            ImGui::Begin("prompt preview", NULL, windowFlags);
+            ImGui::Begin("Clipboard", NULL, windowFlags);
 
             ImGui::PushFont(FontBodyBold);
             ImGui::Text("Clipboard");
             ImGui::PopFont();
 
             ImGui::PushFont(FontDisplayRegular);
-            ImGui::TextWrapped(longString.c_str());
+            if (clipboardText.empty()) {
+                ImGui::TextDisabled("No text in your clipboard.");
+
+                ImGui::PushFont(FontBodyRegular);
+                ImGui::TextDisabled("Copying text to your clipboard will make it available here.");
+                ImGui::PopFont();
+            }
+            else {
+                ImGui::TextWrapped("%s", clipboardText.c_str());
+            }
             ImGui::PopFont();
             ImGui::End();
-            
+        }
 
+        if (showOverlay && !clipboardText.empty()) {
             // options window
             ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY), ImGuiCond_Appearing);
             ImGui::Begin("edit options", NULL, windowFlags);
@@ -313,11 +331,11 @@ int main() {
             if api returns 1 option: replace clipboard
             more than 2 show a selection thing
             */
-            ImGui::Text("Synonyms for...");
-            ImGui::Text("Rephrase...");
-            ImGui::Text("Rewrite formally...");
-            ImGui::Text("Antonyms for...");
-            ImGui::Text("Ungarble...");
+            ImGui::Button("Synonyms for...");
+            ImGui::Button("Rephrase...");
+            ImGui::Button("Rewrite formally...");
+            ImGui::Button("Antonyms for...");
+            ImGui::Button("Ungarble...");
 
             ImGui::PushFont(FontBodyBold);
             //ImGui::SeparatorText("Reformat into a...");
@@ -327,17 +345,12 @@ int main() {
             ImGui::Text("Reformat into a...");
             ImGui::PopFont();
 
-            ImGui::Text("Headline");
-            ImGui::Text("Tagline");
-            ImGui::Text("One word phrase");
-            ImGui::Text("Two word phrase");
+            ImGui::Button("Headline");
+            ImGui::Button("Tagline");
+            ImGui::Button("One word phrase");
+            ImGui::Button("Two word phrase");
 
-            /*if (clipboardText.empty()) {
-                ImGui::Text("!!! NO TEXT");
-            }
-            else {
-                ImGui::Text("%s", clipboardText.c_str());
-            }*/
+            
 
             ImGui::PopFont();
             ImGui::End();
