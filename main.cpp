@@ -21,7 +21,9 @@
 #include <random>
 #include <algorithm>
 
-#include <fmt/core.h>
+#include <cpr/cpr.h>
+#include "nlohmann/json.hpp"
+using json = nlohmann::json;
 
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
@@ -125,7 +127,19 @@ int main() {
         return 1;
     }
 
-    fmt::print("works\n");
+    cpr::Response r = cpr::Get(cpr::Url{ "https://jsonplaceholder.typicode.com/todos/1" });
+    std::cout << r.status_code << std::endl; // 200
+    std::cout << r.header["content-type"] << std::endl; // application/json; charset=utf-8
+    std::cout << r.text << std::endl;
+    
+    // https://github.com/nlohmann/json?tab=readme-ov-file#serialization--deserialization
+    json data = json::parse(r.text);
+    //json j3 = json::parse(R"({"happy": true, "pi": 3.141})");
+    std::cout << data.dump() << std::endl;
+    std::cout << data["title"] << std::endl;
+    std::cout << data["invalid"] << std::endl;
+
+    std::cout << "works" << std::endl;
 
     // setting up opengl window stuff
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
