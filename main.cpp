@@ -80,6 +80,39 @@ std::string getClipboardText() {
     return clipboardText;
 }
 
+// fade text with transparent rectangle
+void drawFadedTextOverlay() {
+    // https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-how-can-i-display-custom-shapes-using-low-level-imdrawlist-api
+    // imgui_demo.cpp 9646
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    // get rect region
+    // https://github.com/ocornut/imgui/issues/2486#issuecomment-482635607
+    ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+    ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+
+    vMin.x += ImGui::GetWindowPos().x;
+    vMin.y += ImGui::GetWindowPos().y;
+    vMax.x += ImGui::GetWindowPos().x;
+    vMax.y += ImGui::GetWindowPos().y;
+
+    // minus half of window padding and lower top by half of window height
+    vMin.x -= 8.0f;
+    vMin.y += 125.0f;
+    vMax.x += 8.0f;
+    //vMax.y += 10.0f;
+
+    ImU32 transparentColor = ImGui::GetColorU32(IM_COL32(28, 28, 28, 0));
+    ImU32 bodyColor = ImGui::GetColorU32(IM_COL32(28, 28, 28, 255));
+    draw_list->AddRectFilledMultiColor(vMin, vMax, transparentColor, transparentColor, bodyColor, bodyColor);
+    //ImGui::GetForegroundDrawList()->AddRect(vMin, vMax, IM_COL32(255, 255, 0, 255));
+
+    // bottom solid rect part
+    ImVec2 solidCoordsTop = ImVec2(vMin.x, vMax.y);
+    ImVec2 solidCoordsBottom = ImVec2(vMax.x, vMax.y + 15);
+    draw_list->AddRectFilled(solidCoordsTop, solidCoordsBottom, bodyColor, bodyColor);
+    //ImGui::GetForegroundDrawList()->AddRect(solidCoordsTop, solidCoordsBottom, IM_COL32(255, 0, 0, 255));
+}
 
 int main() {
     if (!glfwInit()) {
@@ -153,7 +186,7 @@ int main() {
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowBorderSize = 1.f;
-    style.WindowPadding = ImVec2(16.0f, 16.0f);;
+    style.WindowPadding = ImVec2(16.0f, 16.0f);
     style.WindowRounding = 8.0f;
     style.ChildRounding = 8.0f;
     style.FrameRounding = 8.0f;
@@ -176,8 +209,8 @@ int main() {
     colors[ImGuiCol_SliderGrab] = ImVec4(0.47f, 0.50f, 0.54f, 1.00f);
     colors[ImGuiCol_SliderGrabActive] = ImVec4(0.68f, 0.78f, 0.97f, 1.00f);
     //colors[ImGuiCol_Button] = ImVec4(0.27f, 0.28f, 0.30f, 1.00f);
-    colors[ImGuiCol_ButtonHovered] = ImVec4(0.35f, 0.37f, 0.40f, 1.00f);
-    colors[ImGuiCol_ButtonActive] = ImVec4(0.40f, 0.43f, 0.48f, 1.00f);
+    colors[ImGuiCol_ButtonHovered] = ImVec4(0.27f, 0.28f, 0.30f, 1.00f);
+    colors[ImGuiCol_ButtonActive] = ImVec4(0.35f, 0.37f, 0.40f, 1.00f);
     colors[ImGuiCol_Header] = ImVec4(0.07f, 0.07f, 0.07f, 1.00f);
     colors[ImGuiCol_HeaderHovered] = ImVec4(0.15f, 0.16f, 0.16f, 1.00f);
     colors[ImGuiCol_HeaderActive] = ImVec4(0.24f, 0.25f, 0.27f, 1.00f);
@@ -311,6 +344,9 @@ int main() {
                 ImGui::TextWrapped("%s", clipboardText.c_str());
             }
             ImGui::PopFont();
+
+            
+            drawFadedTextOverlay();
             ImGui::End();
         }
 
