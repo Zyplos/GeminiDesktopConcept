@@ -21,9 +21,13 @@
 #include <random>
 #include <algorithm>
 
+#include <fmt/core.h>
+
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
 std::string clipboardText = "";
+
+
 
 // gemini made this thank you
 std::string getClipboardText() {
@@ -120,6 +124,8 @@ int main() {
         glfwTerminate();
         return 1;
     }
+
+    fmt::print("works\n");
 
     // setting up opengl window stuff
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -372,6 +378,7 @@ int main() {
             ImGui::Button("Rewrite formally...");
             ImGui::Button("Antonyms for...");
             ImGui::Button("Ungarble...");
+            ImGui::Button("Shorten...");
 
             ImGui::PushFont(FontBodyBold);
             //ImGui::SeparatorText("Reformat into a...");
