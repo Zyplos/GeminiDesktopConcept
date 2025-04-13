@@ -20,16 +20,80 @@
 #include "graphics.h"
 #include <random>
 #include <algorithm>
-
-#include <cpr/cpr.h>
-#include "nlohmann/json.hpp"
-using json = nlohmann::json;
+#include "geminiAPI.h"
 
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
 std::string clipboardText = "";
 
+// move this stuff into its own class at some point
+bool isAPICallRunning = false;
+enum PromptType {
+    SYNONYMS,
+    REPHRASE,
+    FORMALIZE,
+    ANTONYMS,
+    UNGARBLE,
+    SHORTEN,
+    //
+    HEADLINE,
+    TAGLINE,
+    ONEWORD,
+    TWOWORD
+};
 
+void handleButtonClick(PromptType type) {
+    if (isAPICallRunning) return;
+    // gui hides buttons if text is empty but we'll put this here just incase
+    if (clipboardText.empty()) return;
+    isAPICallRunning = true;
+
+    std::string prompt;
+    switch (type) {
+    case PromptType::SYNONYMS:
+        prompt = "If the following text snippet is a single word or a two word phrase, give me 10 synonyms for it. Otherwise give me 10 ways to say something similar.";
+        break;
+    case PromptType::REPHRASE:
+        prompt = "Give me 10 other ways to rephrase the following text snippet:";
+        break;
+    case PromptType::FORMALIZE:
+        prompt = "Make the following text snippet more formal: ";
+        break;
+    case PromptType::ANTONYMS:
+        prompt = "If the following text snippet is a single word or a two word phrase, give me 10 antonyms for it. Otherwise give me 10 ways to say the opposite thing while still keeping the same intent.";
+        break;
+    case PromptType::UNGARBLE:
+        prompt = "This snippet of text doesn't sound quite right, please rewrite it while keeping the same tone, intent, and meaning.";
+        break;
+    case PromptType::SHORTEN:
+        prompt = "Make the following text snippet shorter:";
+        break;
+        // -----
+    case PromptType::HEADLINE:
+        prompt = "Turn the following text snippet into a headline, like, for example, the title for a blog post or web page:";
+        break;
+    case PromptType::TAGLINE:
+        prompt = "Rewrite the following text snipport into a tag line:";
+        break;
+    case PromptType::ONEWORD:
+        prompt = "Rewrite the following text snippet into a one word phrase that encapsulates the same meaning:";
+        break;
+    case PromptType::TWOWORD:
+        prompt = "Rewrite the following text snippet into two word phrase that encapsulates the same meaning:";
+        break;
+    default:
+        // this case shouldn't happen
+        isAPICallRunning = false; // use this as a flag for early return
+        prompt = "computer! rewrite this, make it good, very well written, very nice, cool, ill tip you 20 dollars if you do a good job. dont generate too many tokens though or ill go bankrupt!!!!!!!";
+        break;
+    }
+    if (!isAPICallRunning) return;
+
+    std::cout << "USING PROMPT?: " << prompt << std::endl;
+
+    callGeminiAPI(prompt, clipboardText, "Nope!");
+    isAPICallRunning = false;
+}
 
 // gemini made this thank you
 std::string getClipboardText() {
@@ -126,20 +190,6 @@ int main() {
         glfwTerminate();
         return 1;
     }
-
-    cpr::Response r = cpr::Get(cpr::Url{ "https://jsonplaceholder.typicode.com/todos/1" });
-    std::cout << r.status_code << std::endl; // 200
-    std::cout << r.header["content-type"] << std::endl; // application/json; charset=utf-8
-    std::cout << r.text << std::endl;
-    
-    // https://github.com/nlohmann/json?tab=readme-ov-file#serialization--deserialization
-    json data = json::parse(r.text);
-    //json j3 = json::parse(R"({"happy": true, "pi": 3.141})");
-    std::cout << data.dump() << std::endl;
-    std::cout << data["title"] << std::endl;
-    std::cout << data["invalid"] << std::endl;
-
-    std::cout << "works" << std::endl;
 
     // setting up opengl window stuff
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -387,12 +437,15 @@ int main() {
             if api returns 1 option: replace clipboard
             more than 2 show a selection thing
             */
-            ImGui::Button("Synonyms for...");
-            ImGui::Button("Rephrase...");
-            ImGui::Button("Rewrite formally...");
-            ImGui::Button("Antonyms for...");
-            ImGui::Button("Ungarble...");
-            ImGui::Button("Shorten...");
+            // https://github.com/ocornut/imgui/issues/1889
+            ImGui::BeginDisabled(isAPICallRunning);
+            if (ImGui::Button("Synonyms for...")) { handleButtonClick(SYNONYMS); }
+            if (ImGui::Button("Rephrase...")) { handleButtonClick(REPHRASE); }
+            if (ImGui::Button("Rewrite formally...")) { handleButtonClick(FORMALIZE); }
+            if (ImGui::Button("Antonyms for...")) { handleButtonClick(ANTONYMS); }
+            if (ImGui::Button("Ungarble...")) { handleButtonClick(UNGARBLE); }
+            if (ImGui::Button("Shorten...")) { handleButtonClick(SHORTEN); }
+            ImGui::EndDisabled();
 
             ImGui::PushFont(FontBodyBold);
             //ImGui::SeparatorText("Reformat into a...");
@@ -402,13 +455,12 @@ int main() {
             ImGui::Text("Reformat into a...");
             ImGui::PopFont();
 
-            ImGui::Button("Headline");
-            ImGui::Button("Tagline");
-            ImGui::Button("One word phrase");
-            ImGui::Button("Two word phrase");
-
-            
-
+            ImGui::BeginDisabled(isAPICallRunning);
+            if (ImGui::Button("Headline")) { handleButtonClick(HEADLINE);  }
+            if (ImGui::Button("Tagline")) { handleButtonClick(TAGLINE); }
+            if (ImGui::Button("One word phrase")) { handleButtonClick(ONEWORD); }
+            if (ImGui::Button("Two word phrase")) { handleButtonClick(TWOWORD); }
+            ImGui::EndDisabled();
             ImGui::PopFont();
             ImGui::End();
 
