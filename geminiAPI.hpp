@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 #include <cpr/cpr.h>
 #include "nlohmann/json.hpp"
 
@@ -29,7 +30,8 @@ public:
     std::string GEMINI_KEY;
     State state;
     cpr::Response httpResponse;
-    std::string suggestions;
+    std::string httpFeedback;
+    std::vector<std::string> suggestions;
 
     GeminiClient(std::string apiKey);
 

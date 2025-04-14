@@ -10,7 +10,7 @@ GeminiClient::GeminiClient(std::string apiKey) :
 
 void GeminiClient::reset() {
     state = State::IDLE;
-    suggestions = "";
+    httpFeedback = "";
 }
 
 bool GeminiClient::callAPI(std::string prompt, std::string clipboardText) {
@@ -38,6 +38,7 @@ bool GeminiClient::callAPI(std::string prompt, std::string clipboardText) {
 
 void GeminiClient::processResponse(cpr::Response response) {
     std::cout << "!!! PROCESSING" << std::endl;
+    httpResponse = response;
 
     if (response.status_code != 200) {
         state = State::FAILED;
@@ -46,17 +47,31 @@ void GeminiClient::processResponse(cpr::Response response) {
         return;
     }
 
-    json data = json::parse(response.text);
-    suggestions = data["candidates"][0]["content"]["parts"][0]["text"];
-    state = State::FINISHED;
+    std::cout << "!!!!!!!!!!! RAW RESPONSE" << response.text << std::endl;
 
-    std::cout << "!!!!!!!!!!! GEMINI RESPONSE" << suggestions << std::endl;
+
+    json data = json::parse(response.text);
+    std::string suggestionsRaw = data["candidates"][0]["content"]["parts"][0]["text"];
+
+    std::cout << "!!! GEMINI RESPONSE" << suggestionsRaw << std::endl;
+
+    try {
+        json suggestionsJson = json::parse(suggestionsRaw);
+        suggestions = suggestionsJson["suggestions"].template get<std::vector<std::string>>();
+        state = State::FINISHED;
+    }
+    catch (json::exception e) {
+        std::cout << "!!! JSON ERROR?" << e.what() << std::endl;;
+        state = State::FAILED;
+    }
+
+    std::cout << "!!! PROCESSING FINISHED" << std::endl;
 }
 
 std::string GeminiClient::getPrompt(PromptType type) {
     switch (type) {
     case PromptType::SYNONYMS:
-        return "If the following text snippet is a single word or a two word phrase, give me 10 synonyms for it. Otherwise give me 10 ways to say something similar.";
+        return "If the following text snippet is a single word or a two word phrase, give me 10 synonyms for it. Otherwise give me 10 ways to say something similar. If suggestions cannot be expressed in 10 words due to needing more context or other reasons, give a variety of suggestions that span multiple possible contexts.";
         break;
     case PromptType::REPHRASE:
         return "Give me 10 other ways to rephrase the following text snippet:";
@@ -65,7 +80,7 @@ std::string GeminiClient::getPrompt(PromptType type) {
         return "Make the following text snippet more formal: ";
         break;
     case PromptType::ANTONYMS:
-        return "If the following text snippet is a single word or a two word phrase, give me 10 antonyms for it. Otherwise give me 10 ways to say the opposite thing while still keeping the same intent.";
+        return "If the following text snippet is a single word or a two word phrase, give me 10 antonyms for it. Otherwise give me 10 ways to say the opposite thing while still keeping the same intent. If suggestions cannot be expressed in 10 words due to needing more context or other reasons, give a variety of suggestions that span multiple possible contexts.";
         break;
     case PromptType::UNGARBLE:
         return "This snippet of text doesn't sound quite right, please rewrite it while keeping the same tone, intent, and meaning.";

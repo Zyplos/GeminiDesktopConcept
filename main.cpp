@@ -47,6 +47,20 @@ void handleButtonClick(GeminiClient::PromptType type) {
     geminiClient.callAPI(prompt, clipboardText);
 }
 
+void handleSelectionClick(std::string suggestion) {
+    // dont use this https://github.com/ocornut/imgui/discussions/4021
+    /*ImGui::LogToClipboard();
+    ImGui::LogText(suggestion.c_str());
+    ImGui::LogFinish();*/
+
+    ImGui::SetClipboardText(suggestion.c_str());
+
+    // clipboardText doesn't automatically update so we'll set it here
+    clipboardText = suggestion;
+
+    showOverlay = false;
+}
+
 // gemini made this thank you
 std::string getClipboardText() {
     if (!OpenClipboard(nullptr)) {
@@ -362,7 +376,9 @@ int main() {
         ImGui::Text("STATUS");
         ImGui::Text("%d", geminiClient.state);
         ImGui::Text("RESPONSE");
-        ImGui::Text(geminiClient.suggestions.c_str());
+        ImGui::TextWrapped(geminiClient.httpResponse.text.c_str());
+        ImGui::Text("HTTP FEEDBACK");
+        ImGui::TextWrapped(geminiClient.httpFeedback.c_str());
         ImGui::End();
 
         // ===== MAIN GUI STUFF
@@ -428,7 +444,9 @@ int main() {
                 more than 2 show a selection thing
                 */
                 if (geminiClient.state == GeminiClient::FINISHED) {
-                    ImGui::TextWrapped(geminiClient.suggestions.c_str());
+                    for (const std::string suggestion : geminiClient.suggestions) {
+                        if (ImGui::Button(suggestion.c_str())) { handleSelectionClick(suggestion); }
+                    }
                     ImGui::Spacing();
                     if (ImGui::Button("reset")) {
                         geminiClient.reset();
