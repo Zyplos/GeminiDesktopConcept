@@ -20,10 +20,46 @@
 #include "graphics.h"
 #include <random>
 #include <algorithm>
+#include "geminiAPI.hpp"
 
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
 std::string clipboardText = "";
+GeminiClient geminiClient("Nope!");
+
+void handleButtonClick(GeminiClient::PromptType type) {
+    // gui hides buttons if text is empty but we'll put this here just incase
+    if (clipboardText.empty()) {
+        return;
+    }
+    if (geminiClient.state != GeminiClient::IDLE) {
+        return;
+    }
+
+    std::string prompt = geminiClient.getPrompt(type);
+    
+    if (prompt.empty()) {
+        return;
+    }
+
+    std::cout << "USING PROMPT?: " << prompt << std::endl;
+
+    geminiClient.callAPI(prompt, clipboardText);
+}
+
+void handleSelectionClick(std::string suggestion) {
+    // dont use this https://github.com/ocornut/imgui/discussions/4021
+    /*ImGui::LogToClipboard();
+    ImGui::LogText(suggestion.c_str());
+    ImGui::LogFinish();*/
+
+    ImGui::SetClipboardText(suggestion.c_str());
+
+    // clipboardText doesn't automatically update so we'll set it here
+    clipboardText = suggestion;
+
+    showOverlay = false;
+}
 
 // gemini made this thank you
 std::string getClipboardText() {
@@ -231,6 +267,14 @@ int main() {
     windowFlags |= ImGuiWindowFlags_NoCollapse;
     windowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
 
+    ImGuiWindowFlags selectionWindowFlags = 0;
+    selectionWindowFlags |= ImGuiWindowFlags_NoMove;
+    selectionWindowFlags |= ImGuiWindowFlags_NoTitleBar;
+    selectionWindowFlags |= ImGuiWindowFlags_NoMove;
+    selectionWindowFlags |= ImGuiWindowFlags_NoResize;
+    selectionWindowFlags |= ImGuiWindowFlags_NoCollapse;
+    selectionWindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
@@ -321,9 +365,25 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        bool isClientDoingSomething = geminiClient.state != GeminiClient::IDLE;
+
+
+        ImGui::Begin("DEBUG");
+        ImGui::Text("OVERLAY");
+        ImGui::Text("%d", showOverlay);
+        ImGui::Text("CLIPBOARD");
+        ImGui::Text(clipboardText.c_str());
+        ImGui::Text("STATUS");
+        ImGui::Text("%d", geminiClient.state);
+        ImGui::Text("RESPONSE");
+        ImGui::TextWrapped(geminiClient.httpResponse.text.c_str());
+        ImGui::Text("HTTP FEEDBACK");
+        ImGui::TextWrapped(geminiClient.httpFeedback.c_str());
+        ImGui::End();
+
         // ===== MAIN GUI STUFF
+        // prompt display window
         if (showOverlay) {
-            // prompt display window
             ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
             ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY - guiWindowHeight - guiWindowMargin), ImGuiCond_Appearing);
             ImGui::Begin("Clipboard", NULL, windowFlags);
@@ -350,46 +410,95 @@ int main() {
             ImGui::End();
         }
 
-        if (showOverlay && !clipboardText.empty()) {
-            // options window
-            ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY), ImGuiCond_Appearing);
-            ImGui::Begin("edit options", NULL, windowFlags);
+        ImVec2 mouseOrigin = ImVec2(startMouseX, startMouseY);
 
-            ImGui::PushFont(FontBodyBold);
-            //ImGui::Separator();
-            ImGui::Text("Edit Text");
-            //ImGui::SeparatorText("Edit Text");
-            ImGui::PopFont();
+        // interactive stuff
+        if (showOverlay) {
 
-            ImGui::PushFont(FontBodyRegular);
+            // gemini reponse selector
+            if (isClientDoingSomething) {
+                ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+                ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+                ImGui::Begin("gemini response", NULL, selectionWindowFlags);
+                ImGui::PushFont(FontBodyRegular);
 
-            /*
-            if api returns 1 option: replace clipboard
-            more than 2 show a selection thing
-            */
-            ImGui::Button("Synonyms for...");
-            ImGui::Button("Rephrase...");
-            ImGui::Button("Rewrite formally...");
-            ImGui::Button("Antonyms for...");
-            ImGui::Button("Ungarble...");
+                if (geminiClient.state == GeminiClient::RUNNING) {
+                    ImGui::Text("Generating suggestions...");
+                }
 
-            ImGui::PushFont(FontBodyBold);
-            //ImGui::SeparatorText("Reformat into a...");
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-            ImGui::Text("Reformat into a...");
-            ImGui::PopFont();
+                if (geminiClient.state == GeminiClient::FAILED) {
+                    ImGui::PushFont(FontBodyBold);
+                    ImGui::TextColored(ImVec4(1.0f, 0.24f, 0.24f, 1.0f), "Sorry!");
+                    ImGui::PopFont();
 
-            ImGui::Button("Headline");
-            ImGui::Button("Tagline");
-            ImGui::Button("One word phrase");
-            ImGui::Button("Two word phrase");
+                    ImGui::Text("An error occurred trying to get a response from Gemini.");
+                    // TODO show some error text from somewhere
 
-            
+                    if (ImGui::Button("reset")) {
+                        geminiClient.reset();
+                    }
+                }
 
-            ImGui::PopFont();
-            ImGui::End();
+                /*
+                if api returns 1 option: replace clipboard
+                more than 2 show a selection thing
+                */
+                if (geminiClient.state == GeminiClient::FINISHED) {
+                    for (const std::string suggestion : geminiClient.suggestions) {
+                        if (ImGui::Button(suggestion.c_str())) { handleSelectionClick(suggestion); }
+                    }
+                    ImGui::Spacing();
+                    if (ImGui::Button("reset")) {
+                        geminiClient.reset();
+                    }
+                }
+
+                ImGui::PopFont();
+                ImGui::End();
+            }
+
+            // if clipboardText has text and client is idle show options
+            if (!clipboardText.empty() && !isClientDoingSomething) {
+                // options window
+                ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+                ImGui::Begin("edit options", NULL, windowFlags);
+
+                ImGui::PushFont(FontBodyBold);
+                //ImGui::Separator();
+                ImGui::Text("Edit Text");
+                //ImGui::SeparatorText("Edit Text");
+                ImGui::PopFont();
+
+                ImGui::PushFont(FontBodyRegular);
+                
+                // https://github.com/ocornut/imgui/issues/1889
+                ImGui::BeginDisabled(isClientDoingSomething);
+                if (ImGui::Button("Synonyms for...")) { handleButtonClick(GeminiClient::PromptType::SYNONYMS); }
+                if (ImGui::Button("Rephrase...")) { handleButtonClick(GeminiClient::PromptType::REPHRASE); }
+                if (ImGui::Button("Rewrite formally...")) { handleButtonClick(GeminiClient::PromptType::FORMALIZE); }
+                if (ImGui::Button("Antonyms for...")) { handleButtonClick(GeminiClient::PromptType::ANTONYMS); }
+                if (ImGui::Button("Ungarble...")) { handleButtonClick(GeminiClient::PromptType::UNGARBLE); }
+                if (ImGui::Button("Shorten...")) { handleButtonClick(GeminiClient::PromptType::SHORTEN); }
+                ImGui::EndDisabled();
+
+                ImGui::PushFont(FontBodyBold);
+                //ImGui::SeparatorText("Reformat into a...");
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+                ImGui::Text("Reformat into a...");
+                ImGui::PopFont();
+
+                ImGui::BeginDisabled(isClientDoingSomething);
+                if (ImGui::Button("Headline")) { handleButtonClick(GeminiClient::PromptType::HEADLINE); }
+                if (ImGui::Button("Tagline")) { handleButtonClick(GeminiClient::PromptType::TAGLINE); }
+                if (ImGui::Button("One word phrase")) { handleButtonClick(GeminiClient::PromptType::ONEWORD); }
+                if (ImGui::Button("Two word phrase")) { handleButtonClick(GeminiClient::PromptType::TWOWORD); }
+                ImGui::EndDisabled();
+
+                ImGui::PopFont();
+                ImGui::End();
+            }
 
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
         }
