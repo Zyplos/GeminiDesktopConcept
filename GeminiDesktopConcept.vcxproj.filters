@@ -86,7 +86,7 @@
     <ClInclude Include="graphics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="geminiAPI.h">
+    <ClInclude Include="geminiAPI.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
