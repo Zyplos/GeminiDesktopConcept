@@ -25,7 +25,7 @@
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
 std::string clipboardText = "";
-GeminiClient geminiClient("AIzaSyChTI7BdpsHZPAI1GiAXWGEgoUzgqjSWxY");
+GeminiClient geminiClient("Nope!");
 
 void handleButtonClick(GeminiClient::PromptType type) {
     // gui hides buttons if text is empty but we'll put this here just incase
