@@ -1,5 +1,4 @@
 #include "geminiAPI.hpp"
-#include <iostream>
 
 using json = nlohmann::json;
 
@@ -10,7 +9,7 @@ GeminiClient::GeminiClient(std::string apiKey) :
 
 void GeminiClient::reset() {
     state = State::IDLE;
-    httpFeedback = "";
+    errorFeedback = "";
 }
 
 bool GeminiClient::callAPI(std::string prompt, std::string clipboardText) {
@@ -21,13 +20,12 @@ bool GeminiClient::callAPI(std::string prompt, std::string clipboardText) {
 
     std::string finalPrompt = prompt + "\n\n" + clipboardText;
 
-    std::cout << "!!! CALLING API" << std::endl;
     cpr::PostCallback(
         // c++ lambda
         [this](cpr::Response response) {
-            std::cout << "!!! CPR CALLBACK FIRING" << std::endl;
             processResponse(response);
         },
+
         cpr::Url{ "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_KEY },
         cpr::Body{ "{ \"contents\": [ { \"role\": \"user\", \"parts\": [ { \"text\": \"" + finalPrompt + "\" }, ] }, ], \"generationConfig\": { \"responseMimeType\": \"application/json\", \"responseSchema\": { \"type\": \"object\", \"properties\": { \"suggestions\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } } }, \"required\": [ \"suggestions\" ] }, }, \"safetySettings\": [ { \"category\": \"HARM_CATEGORY_CIVIC_INTEGRITY\", \"threshold\": \"BLOCK_LOW_AND_ABOVE\" }, ], }" },
         cpr::Header{ {"Content-Type", "application/json"} }
@@ -37,35 +35,36 @@ bool GeminiClient::callAPI(std::string prompt, std::string clipboardText) {
 }
 
 void GeminiClient::processResponse(cpr::Response response) {
-    std::cout << "!!! PROCESSING" << std::endl;
-    httpResponse = response;
+    //std::cout << "!!!!!!!!!!! RAW RESPONSE" << response.text << std::endl;
 
     if (response.status_code != 200) {
         state = State::FAILED;
-        std::cout << "!!! FAILED?" << response.status_code << std::endl;
-        std::cout << response.text << std::endl;
+        errorFeedback = "There was an error trying to get suggestions from Gemini. (HTTP " + std::to_string(response.status_code) + ")";
+
+        try {
+            json jsonData = json::parse(response.text);
+            errorFeedback += "\n" + jsonData["error"]["message"].template get<std::string>();
+        }
+        catch (json::exception e) {
+            // double error
+        }
+
         return;
     }
 
-    std::cout << "!!!!!!!!!!! RAW RESPONSE" << response.text << std::endl;
-
-
-    json data = json::parse(response.text);
-    std::string suggestionsRaw = data["candidates"][0]["content"]["parts"][0]["text"];
-
-    std::cout << "!!! GEMINI RESPONSE" << suggestionsRaw << std::endl;
-
     try {
+        json data = json::parse(response.text);
+        std::string suggestionsRaw = data["candidates"][0]["content"]["parts"][0]["text"];
+
         json suggestionsJson = json::parse(suggestionsRaw);
         suggestions = suggestionsJson["suggestions"].template get<std::vector<std::string>>();
         state = State::FINISHED;
     }
     catch (json::exception e) {
-        std::cout << "!!! JSON ERROR?" << e.what() << std::endl;;
         state = State::FAILED;
+        std::string errorString(e.what());
+        errorFeedback = "There was an error trying to parse Gemini's reponse.\n\n" + errorString;
     }
-
-    std::cout << "!!! PROCESSING FINISHED" << std::endl;
 }
 
 std::string GeminiClient::getPrompt(PromptType type) {

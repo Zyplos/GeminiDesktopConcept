@@ -29,8 +29,7 @@ public:
 
     std::string GEMINI_KEY;
     State state;
-    cpr::Response httpResponse;
-    std::string httpFeedback;
+    std::string errorFeedback;
     std::vector<std::string> suggestions;
 
     GeminiClient(std::string apiKey);

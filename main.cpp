@@ -274,6 +274,15 @@ int main() {
     selectionWindowFlags |= ImGuiWindowFlags_NoResize;
     selectionWindowFlags |= ImGuiWindowFlags_NoCollapse;
     selectionWindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
+    selectionWindowFlags |= ImGuiWindowFlags_NoBackground;
+
+    ImGuiWindowFlags geminiStatusWindowFlags = 0;
+    geminiStatusWindowFlags |= ImGuiWindowFlags_NoMove;
+    geminiStatusWindowFlags |= ImGuiWindowFlags_NoTitleBar;
+    geminiStatusWindowFlags |= ImGuiWindowFlags_NoMove;
+    geminiStatusWindowFlags |= ImGuiWindowFlags_NoResize;
+    geminiStatusWindowFlags |= ImGuiWindowFlags_NoCollapse;
+    geminiStatusWindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
@@ -375,10 +384,8 @@ int main() {
         ImGui::Text(clipboardText.c_str());
         ImGui::Text("STATUS");
         ImGui::Text("%d", geminiClient.state);
-        ImGui::Text("RESPONSE");
-        ImGui::TextWrapped(geminiClient.httpResponse.text.c_str());
         ImGui::Text("HTTP FEEDBACK");
-        ImGui::TextWrapped(geminiClient.httpFeedback.c_str());
+        ImGui::TextWrapped(geminiClient.errorFeedback.c_str());
         ImGui::End();
 
         // ===== MAIN GUI STUFF
@@ -419,7 +426,7 @@ int main() {
             if (isClientDoingSomething) {
                 ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
                 ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-                ImGui::Begin("gemini response", NULL, selectionWindowFlags);
+                ImGui::Begin("gemini response", NULL, geminiClient.state == GeminiClient::FINISHED ? selectionWindowFlags : geminiStatusWindowFlags);
                 ImGui::PushFont(FontBodyRegular);
 
                 if (geminiClient.state == GeminiClient::RUNNING) {
@@ -431,10 +438,11 @@ int main() {
                     ImGui::TextColored(ImVec4(1.0f, 0.24f, 0.24f, 1.0f), "Sorry!");
                     ImGui::PopFont();
 
-                    ImGui::Text("An error occurred trying to get a response from Gemini.");
-                    // TODO show some error text from somewhere
+                    ImGui::Text("Couldn't get suggestions.");
+                    ImGui::TextWrapped(geminiClient.errorFeedback.c_str());
 
-                    if (ImGui::Button("reset")) {
+                    ImGui::Spacing();
+                    if (ImGui::Button("Try again")) {
                         geminiClient.reset();
                     }
                 }
@@ -447,8 +455,9 @@ int main() {
                     for (const std::string suggestion : geminiClient.suggestions) {
                         if (ImGui::Button(suggestion.c_str())) { handleSelectionClick(suggestion); }
                     }
+
                     ImGui::Spacing();
-                    if (ImGui::Button("reset")) {
+                    if (ImGui::Button("Reset")) {
                         geminiClient.reset();
                     }
                 }
