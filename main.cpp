@@ -3,7 +3,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <imgui_internal.h>
 #include <imgui.h>
+#include <imgui_stdlib.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
@@ -25,7 +27,12 @@
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
 std::string clipboardText = "";
-GeminiClient geminiClient("Nope!");
+GeminiClient geminiClient("");
+std::string GEMINI_KEY = "";
+
+// if imgui.ini doesnt exist then UserData_ReadLine doesnt fire
+// so show the key prompt by default. UserData_ReadLine will set this to false on launch
+bool shouldShowGeminiKeyPrompt = true;
 
 void handleButtonClick(GeminiClient::PromptType type) {
     // gui hides buttons if text is empty but we'll put this here just incase
@@ -150,6 +157,57 @@ void drawFadedTextOverlay() {
     //ImGui::GetForegroundDrawList()->AddRect(solidCoordsTop, solidCoordsBottom, IM_COL32(255, 0, 0, 255));
 }
 
+// manually position setting button in clipboard window
+// see drawFadedTextOverlay() above
+void drawSettingsButton() {
+    ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+    ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+
+    ImVec2 bottomCorner = ImVec2(vMin.x, vMax.y);
+
+    ImGui::SetCursorPos(bottomCorner);
+
+    if (ImGui::Button("Settings")) {
+        shouldShowGeminiKeyPrompt = true;
+    }
+}
+
+// api key settings
+// imgui.cpp 14862
+// https://github.com/ocornut/imgui/issues/7489
+void* UserData_ReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name) {
+    return (void*)name;
+}
+
+void UserData_ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line) {
+    std::cout << "READING CONFIG" << std::endl;
+    std::cout << line << std::endl; 
+
+    const char* prefix = "GeminiKey=";
+    size_t prefix_len = strlen(prefix);
+
+    if (strncmp(line, prefix, prefix_len) == 0) {
+        const char* value = line + prefix_len;
+        GEMINI_KEY = std::string(value);
+        std::cout << "GeminiKey Loaded: " << GEMINI_KEY << std::endl;
+        geminiClient = GeminiClient(GEMINI_KEY);
+        if (GEMINI_KEY.empty()) {
+            std::cout << "??? GeminiKey empty (default?)" << std::endl;
+            shouldShowGeminiKeyPrompt = true;
+        }
+        else {
+            shouldShowGeminiKeyPrompt = false;
+        }
+    }
+}
+
+void UserData_WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
+    std::cout << "SAVING SETTINGS?" << std::endl;
+    buf->appendf("[%s][%s]\n", "UserData", "Gemini");
+    buf->appendf("GeminiKey=%s\n", GEMINI_KEY.c_str());
+    buf->append("\n");
+}
+
 int main() {
     if (!glfwInit()) {
         std::cout << "GLFW failed\n";
@@ -212,6 +270,18 @@ int main() {
     // init imgui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+
+    // set stuff up to safe setting to imgui.ini
+    // https://github.com/ocornut/imgui/issues/2564
+    ImGuiSettingsHandler ini_handler;
+    ini_handler.TypeName = "UserData";
+    ini_handler.TypeHash = ImHashStr("UserData");
+    ini_handler.ReadOpenFn = UserData_ReadOpen;
+    ini_handler.ReadLineFn = UserData_ReadLine;
+    ini_handler.WriteAllFn = UserData_WriteAll;
+    ImGui::AddSettingsHandler(&ini_handler);
+
+    // fonts and styling
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.Fonts->AddFontDefault();
@@ -386,6 +456,8 @@ int main() {
         ImGui::Text("%d", geminiClient.state);
         ImGui::Text("HTTP FEEDBACK");
         ImGui::TextWrapped(geminiClient.errorFeedback.c_str());
+        ImGui::Text("GEMINI_KEY");
+        ImGui::TextWrapped(GEMINI_KEY.c_str());
         ImGui::End();
 
         // ===== MAIN GUI STUFF
@@ -414,6 +486,9 @@ int main() {
 
             
             drawFadedTextOverlay();
+
+            //drawSettingsButton();
+
             ImGui::End();
         }
 
@@ -421,92 +496,125 @@ int main() {
 
         // interactive stuff
         if (showOverlay) {
-
-            // gemini reponse selector
-            if (isClientDoingSomething) {
-                ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+            if (shouldShowGeminiKeyPrompt) {
+                //ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
                 ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-                ImGui::Begin("gemini response", NULL, geminiClient.state == GeminiClient::FINISHED ? selectionWindowFlags : geminiStatusWindowFlags);
                 ImGui::PushFont(FontBodyRegular);
 
-                if (geminiClient.state == GeminiClient::RUNNING) {
-                    ImGui::Text("Generating suggestions...");
+                ImGui::Begin("api key window", NULL, geminiStatusWindowFlags);
+
+
+                ImGui::PushFont(FontBodyBold);
+                ImGui::Text("Settings");
+                ImGui::PopFont();
+
+                // show gemini key prompt before anything else
+                ImGui::TextWrapped("You'll need an API Key from AI Studio. Grab one here: ");
+                ImGui::TextLinkOpenURL("https://aistudio.google.com/app/apikey");
+
+                // https://github.com/ocornut/imgui/issues/1487
+                ImGui::Dummy(ImVec2(0.0f, 10.0f));
+                ImGui::InputText("API Key", &GEMINI_KEY, ImGuiInputTextFlags_CharsNoBlank);
+                ImGui::Spacing();
+
+                bool shouldntLetUserSave = GEMINI_KEY.empty() || GEMINI_KEY.length() < 20;
+                ImGui::BeginDisabled(shouldntLetUserSave);
+                if (ImGui::Button("Save") && !shouldntLetUserSave) { 
+                    geminiClient = GeminiClient(GEMINI_KEY);
+                    shouldShowGeminiKeyPrompt = false; 
                 }
-
-                if (geminiClient.state == GeminiClient::FAILED) {
-                    ImGui::PushFont(FontBodyBold);
-                    ImGui::TextColored(ImVec4(1.0f, 0.24f, 0.24f, 1.0f), "Sorry!");
-                    ImGui::PopFont();
-
-                    ImGui::Text("Couldn't get suggestions.");
-                    ImGui::TextWrapped(geminiClient.errorFeedback.c_str());
-
-                    ImGui::Spacing();
-                    if (ImGui::Button("Try again")) {
-                        geminiClient.reset();
-                    }
-                }
-
-                /*
-                if api returns 1 option: replace clipboard
-                more than 2 show a selection thing
-                */
-                if (geminiClient.state == GeminiClient::FINISHED) {
-                    for (const std::string suggestion : geminiClient.suggestions) {
-                        if (ImGui::Button(suggestion.c_str())) { handleSelectionClick(suggestion); }
-                    }
-
-                    ImGui::Spacing();
-                    if (ImGui::Button("Reset")) {
-                        geminiClient.reset();
-                    }
-                }
+                ImGui::EndDisabled();
 
                 ImGui::PopFont();
                 ImGui::End();
             }
+            else {
+                // gemini reponse selector
+                if (isClientDoingSomething) {
+                    ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+                    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+                    ImGui::Begin("gemini response", NULL, geminiClient.state == GeminiClient::FINISHED ? selectionWindowFlags : geminiStatusWindowFlags);
+                    ImGui::PushFont(FontBodyRegular);
 
-            // if clipboardText has text and client is idle show options
-            if (!clipboardText.empty() && !isClientDoingSomething) {
-                // options window
-                ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-                ImGui::Begin("edit options", NULL, windowFlags);
+                    if (geminiClient.state == GeminiClient::RUNNING) {
+                        ImGui::Text("Generating suggestions...");
+                    }
 
-                ImGui::PushFont(FontBodyBold);
-                //ImGui::Separator();
-                ImGui::Text("Edit Text");
-                //ImGui::SeparatorText("Edit Text");
-                ImGui::PopFont();
+                    if (geminiClient.state == GeminiClient::FAILED) {
+                        ImGui::PushFont(FontBodyBold);
+                        ImGui::TextColored(ImVec4(1.0f, 0.24f, 0.24f, 1.0f), "Sorry!");
+                        ImGui::PopFont();
 
-                ImGui::PushFont(FontBodyRegular);
-                
-                // https://github.com/ocornut/imgui/issues/1889
-                ImGui::BeginDisabled(isClientDoingSomething);
-                if (ImGui::Button("Synonyms for...")) { handleButtonClick(GeminiClient::PromptType::SYNONYMS); }
-                if (ImGui::Button("Rephrase...")) { handleButtonClick(GeminiClient::PromptType::REPHRASE); }
-                if (ImGui::Button("Rewrite formally...")) { handleButtonClick(GeminiClient::PromptType::FORMALIZE); }
-                if (ImGui::Button("Antonyms for...")) { handleButtonClick(GeminiClient::PromptType::ANTONYMS); }
-                if (ImGui::Button("Ungarble...")) { handleButtonClick(GeminiClient::PromptType::UNGARBLE); }
-                if (ImGui::Button("Shorten...")) { handleButtonClick(GeminiClient::PromptType::SHORTEN); }
-                ImGui::EndDisabled();
+                        ImGui::Text("Couldn't get suggestions.");
+                        ImGui::TextWrapped(geminiClient.errorFeedback.c_str());
 
-                ImGui::PushFont(FontBodyBold);
-                //ImGui::SeparatorText("Reformat into a...");
-                ImGui::Spacing();
-                ImGui::Separator();
-                ImGui::Spacing();
-                ImGui::Text("Reformat into a...");
-                ImGui::PopFont();
+                        ImGui::Spacing();
+                        if (ImGui::Button("Try again")) {
+                            geminiClient.reset();
+                        }
+                    }
 
-                ImGui::BeginDisabled(isClientDoingSomething);
-                if (ImGui::Button("Headline")) { handleButtonClick(GeminiClient::PromptType::HEADLINE); }
-                if (ImGui::Button("Tagline")) { handleButtonClick(GeminiClient::PromptType::TAGLINE); }
-                if (ImGui::Button("One word phrase")) { handleButtonClick(GeminiClient::PromptType::ONEWORD); }
-                if (ImGui::Button("Two word phrase")) { handleButtonClick(GeminiClient::PromptType::TWOWORD); }
-                ImGui::EndDisabled();
+                    /*
+                    if api returns 1 option: replace clipboard
+                    more than 2 show a selection thing
+                    */
+                    if (geminiClient.state == GeminiClient::FINISHED) {
+                        for (const std::string suggestion : geminiClient.suggestions) {
+                            if (ImGui::Button(suggestion.c_str())) { handleSelectionClick(suggestion); }
+                        }
 
-                ImGui::PopFont();
-                ImGui::End();
+                        ImGui::Spacing();
+                        if (ImGui::Button("Reset")) {
+                            geminiClient.reset();
+                        }
+                    }
+
+                    ImGui::PopFont();
+                    ImGui::End();
+                }
+
+                // if clipboardText has text and client is idle show options
+                if (!clipboardText.empty() && !isClientDoingSomething) {
+                    // options window
+                    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+                    ImGui::Begin("edit options", NULL, windowFlags);
+
+                    ImGui::PushFont(FontBodyBold);
+                    //ImGui::Separator();
+                    ImGui::Text("Edit Text");
+                    //ImGui::SeparatorText("Edit Text");
+                    ImGui::PopFont();
+
+                    ImGui::PushFont(FontBodyRegular);
+
+                    // https://github.com/ocornut/imgui/issues/1889
+                    ImGui::BeginDisabled(isClientDoingSomething);
+                    if (ImGui::Button("Synonyms for...")) { handleButtonClick(GeminiClient::PromptType::SYNONYMS); }
+                    if (ImGui::Button("Rephrase...")) { handleButtonClick(GeminiClient::PromptType::REPHRASE); }
+                    if (ImGui::Button("Rewrite formally...")) { handleButtonClick(GeminiClient::PromptType::FORMALIZE); }
+                    if (ImGui::Button("Antonyms for...")) { handleButtonClick(GeminiClient::PromptType::ANTONYMS); }
+                    if (ImGui::Button("Ungarble...")) { handleButtonClick(GeminiClient::PromptType::UNGARBLE); }
+                    if (ImGui::Button("Shorten...")) { handleButtonClick(GeminiClient::PromptType::SHORTEN); }
+                    ImGui::EndDisabled();
+
+                    ImGui::PushFont(FontBodyBold);
+                    //ImGui::SeparatorText("Reformat into a...");
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    ImGui::Text("Reformat into a...");
+                    ImGui::PopFont();
+
+                    ImGui::BeginDisabled(isClientDoingSomething);
+                    if (ImGui::Button("Headline")) { handleButtonClick(GeminiClient::PromptType::HEADLINE); }
+                    if (ImGui::Button("Tagline")) { handleButtonClick(GeminiClient::PromptType::TAGLINE); }
+                    if (ImGui::Button("One word phrase")) { handleButtonClick(GeminiClient::PromptType::ONEWORD); }
+                    if (ImGui::Button("Two word phrase")) { handleButtonClick(GeminiClient::PromptType::TWOWORD); }
+                    ImGui::EndDisabled();
+
+                    ImGui::PopFont();
+                    ImGui::End();
+                }
             }
 
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
