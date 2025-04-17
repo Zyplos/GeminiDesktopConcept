@@ -596,12 +596,32 @@ int main() {
 
                     // https://github.com/ocornut/imgui/issues/1889
                     ImGui::BeginDisabled(isClientDoingSomething);
+
                     if (ImGui::Button("Synonyms for...")) { handleButtonClick(GeminiClient::PromptType::SYNONYMS); }
-                    if (ImGui::Button("Rephrase...")) { handleButtonClick(GeminiClient::PromptType::REPHRASE); }
+                    ImGui::SetItemTooltip("Get synonyms for a word\nWill also rephrase sentences");
+
+                    //if (ImGui::Button("Rephrase...")) { handleButtonClick(GeminiClient::PromptType::REPHRASE); }
+
                     if (ImGui::Button("Rewrite formally...")) { handleButtonClick(GeminiClient::PromptType::FORMALIZE); }
+                    ImGui::SetItemTooltip("Keep it professional");
+
                     if (ImGui::Button("Antonyms for...")) { handleButtonClick(GeminiClient::PromptType::ANTONYMS); }
-                    if (ImGui::Button("Ungarble...")) { handleButtonClick(GeminiClient::PromptType::UNGARBLE); }
+                    ImGui::SetItemTooltip("Get antonyms for a word\nWill rewrite your clipboard to mean the opposite");
+
                     if (ImGui::Button("Shorten...")) { handleButtonClick(GeminiClient::PromptType::SHORTEN); }
+                    ImGui::SetItemTooltip("Rewrites the content of your clipboard to be shorter");
+
+                    if (ImGui::Button("Ungarble...")) { handleButtonClick(GeminiClient::PromptType::UNGARBLE); }
+                    if (ImGui::BeginItemTooltip())
+                    {
+                        ImGui::Text("Will rewrite sentences that don't sound quite right, useful for:");
+                        ImGui::BulletText("Gramatically incorrect sentences");
+                        ImGui::BulletText("Fixing incorrect word usage");
+                        ImGui::BulletText("Run on sentences");
+
+                        ImGui::EndTooltip();
+                    }
+
                     ImGui::EndDisabled();
 
                     ImGui::PushFont(FontBodyBold);
