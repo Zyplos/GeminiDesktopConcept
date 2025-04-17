@@ -597,6 +597,11 @@ int main() {
                     // https://github.com/ocornut/imgui/issues/1889
                     ImGui::BeginDisabled(isClientDoingSomething);
 
+                    if (ImGui::Button("LAYOUT TEST")) { 
+                        geminiClient.debug();
+                    }
+
+
                     if (ImGui::Button("Synonyms for...")) { handleButtonClick(GeminiClient::PromptType::SYNONYMS); }
                     ImGui::SetItemTooltip("Get synonyms for a word\nWill also rephrase sentences");
 
