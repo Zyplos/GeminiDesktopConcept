@@ -464,16 +464,19 @@ int main() {
             // text length
             ImGui::SameLine();
             int clipboardLength = clipboardText.length();
-            ImVec4 alertColor = clipboardLength >= 200 ? ImVec4(1.0f, 0.24f, 0.24f, 1.0f) : ImVec4(0.69f, 0.69f, 0.69f, 1.00f);
-            ImGui::TextColored(alertColor, "%d / 200", clipboardLength);
+            if (clipboardLength > 135) {
+                ImGui::TextDisabled("%d characters", clipboardLength);
+            }
 
             // settings button
             ImGui::SameLine();
             ImVec2 buttonSize = ImVec2(80.0f, 0);
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - buttonSize.x);
+            ImGui::BeginDisabled(shouldShowGeminiKeyPrompt);
             if (ImGui::Button("Settings", buttonSize)) {
                 shouldShowGeminiKeyPrompt = true;
             }
+            ImGui::EndDisabled();
 
             ImGui::PopFont();
             //
@@ -492,8 +495,6 @@ int main() {
             ImGui::PopFont();
             
             drawFadedTextOverlay();
-
-            
 
             ImGui::End();
         }
