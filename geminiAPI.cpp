@@ -18,7 +18,20 @@ bool GeminiClient::callAPI(std::string prompt, std::string clipboardText) {
     }
     state = State::RUNNING;
 
-    std::string finalPrompt = prompt + "\n\n" + clipboardText;
+    std::string promptWithText = prompt + "\n\n" + clipboardText;
+
+    // FAILED quote test "this should fail" end text
+    // FAILED slash test \this might fail\
+    // semi quote test 'this might fail' end text
+    // test ; , " \ , end text
+
+    std::string escapedPrompt;
+    for (char c : promptWithText) {
+        if (c == '"' || c == '\\') { 
+            escapedPrompt += '\\'; 
+        }
+        escapedPrompt += c;
+    }
 
     cpr::PostCallback(
         // c++ lambda
@@ -27,7 +40,7 @@ bool GeminiClient::callAPI(std::string prompt, std::string clipboardText) {
         },
 
         cpr::Url{ "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_KEY },
-        cpr::Body{ "{ \"contents\": [ { \"role\": \"user\", \"parts\": [ { \"text\": \"" + finalPrompt + "\" }, ] }, ], \"generationConfig\": { \"responseMimeType\": \"application/json\", \"responseSchema\": { \"type\": \"object\", \"properties\": { \"suggestions\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } } }, \"required\": [ \"suggestions\" ] }, }, \"safetySettings\": [ { \"category\": \"HARM_CATEGORY_CIVIC_INTEGRITY\", \"threshold\": \"BLOCK_LOW_AND_ABOVE\" }, ], }" },
+        cpr::Body{ "{ \"contents\": [ { \"role\": \"user\", \"parts\": [ { \"text\": \"" + escapedPrompt + "\" }, ] }, ], \"generationConfig\": { \"responseMimeType\": \"application/json\", \"responseSchema\": { \"type\": \"object\", \"properties\": { \"suggestions\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } } }, \"required\": [ \"suggestions\" ] }, }, \"safetySettings\": [ { \"category\": \"HARM_CATEGORY_CIVIC_INTEGRITY\", \"threshold\": \"BLOCK_LOW_AND_ABOVE\" }, ], }" },
         cpr::Header{ {"Content-Type", "application/json"} }
     );
 
