@@ -23,6 +23,7 @@
 #include <random>
 #include <algorithm>
 #include "geminiAPI.hpp"
+#include "gui.h"
 
 const GLint WIDTH = 1924, HEIGHT = 1084;
 bool showOverlay = true;
@@ -266,78 +267,8 @@ int main() {
     ini_handler.WriteAllFn = UserData_WriteAll;
     ImGui::AddSettingsHandler(&ini_handler);
 
-    // fonts and styling
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.Fonts->AddFontDefault();
-    ImFont* FontBodyRegular = io.Fonts->AddFontFromFileTTF("Outfit-Regular.ttf", 20.0f);
-    ImFont* FontBodyBold = io.Fonts->AddFontFromFileTTF("Outfit-Bold.ttf", 20.0f);
-    ImFont* FontDisplayRegular = io.Fonts->AddFontFromFileTTF("Outfit-Regular.ttf", 32.0f);
-
-    ImGui::StyleColorsDark();
-    ImGuiStyle& style = ImGui::GetStyle();
-    style.WindowBorderSize = 1.f;
-    style.WindowPadding = ImVec2(16.0f, 16.0f);
-    style.WindowRounding = 8.0f;
-    style.ChildRounding = 8.0f;
-    style.FrameRounding = 8.0f;
-    style.PopupRounding = 8.0f;
-    style.ScrollbarRounding = 12.0f;
-    style.GrabRounding = 12.0f;
-    style.AntiAliasedLines = true;
-    style.AntiAliasedFill = true;
-
-    ImVec4* colors = ImGui::GetStyle().Colors;
-    colors[ImGuiCol_WindowBg] = colors[ImGuiCol_Button] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
-    colors[ImGuiCol_Border] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-    colors[ImGuiCol_FrameBg] = ImVec4(0.21f, 0.22f, 0.25f, 0.54f);
-    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.42f, 0.46f, 0.52f, 0.54f);
-    colors[ImGuiCol_FrameBgActive] = ImVec4(0.57f, 0.69f, 0.82f, 0.40f);
-    colors[ImGuiCol_TitleBgActive] = ImVec4(0.16f, 0.17f, 0.18f, 1.00f);
-    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.16f, 0.17f, 0.18f, 1.00f);
-    colors[ImGuiCol_MenuBarBg] = ImVec4(0.08f, 0.08f, 0.09f, 1.00f);
-    colors[ImGuiCol_CheckMark] = ImVec4(0.68f, 0.78f, 0.97f, 1.00f);
-    colors[ImGuiCol_SliderGrab] = ImVec4(0.47f, 0.50f, 0.54f, 1.00f);
-    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.68f, 0.78f, 0.97f, 1.00f);
-    //colors[ImGuiCol_Button] = ImVec4(0.27f, 0.28f, 0.30f, 1.00f);
-    colors[ImGuiCol_ButtonHovered] = ImVec4(0.27f, 0.28f, 0.30f, 1.00f);
-    colors[ImGuiCol_ButtonActive] = ImVec4(0.35f, 0.37f, 0.40f, 1.00f);
-    colors[ImGuiCol_Header] = ImVec4(0.07f, 0.07f, 0.07f, 1.00f);
-    colors[ImGuiCol_HeaderHovered] = ImVec4(0.15f, 0.16f, 0.16f, 1.00f);
-    colors[ImGuiCol_HeaderActive] = ImVec4(0.24f, 0.25f, 0.27f, 1.00f);
-    colors[ImGuiCol_DragDropTarget] = ImVec4(0.15f, 0.45f, 1.00f, 0.90f);
-    colors[ImGuiCol_TextDisabled] = ImVec4(0.69f, 0.69f, 0.69f, 1.00f);
-
-
-
-
-
-    ImGuiWindowFlags windowFlags = 0;
-    windowFlags |= ImGuiWindowFlags_NoMove;
-    windowFlags |= ImGuiWindowFlags_NoTitleBar;
-    windowFlags |= ImGuiWindowFlags_NoScrollbar;
-    windowFlags |= ImGuiWindowFlags_NoScrollWithMouse;
-    windowFlags |= ImGuiWindowFlags_NoMove;
-    windowFlags |= ImGuiWindowFlags_NoResize;
-    windowFlags |= ImGuiWindowFlags_NoCollapse;
-    windowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
-
-    ImGuiWindowFlags selectionWindowFlags = 0;
-    selectionWindowFlags |= ImGuiWindowFlags_NoMove;
-    selectionWindowFlags |= ImGuiWindowFlags_NoTitleBar;
-    selectionWindowFlags |= ImGuiWindowFlags_NoMove;
-    selectionWindowFlags |= ImGuiWindowFlags_NoResize;
-    selectionWindowFlags |= ImGuiWindowFlags_NoCollapse;
-    selectionWindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
-    selectionWindowFlags |= ImGuiWindowFlags_NoBackground;
-
-    ImGuiWindowFlags geminiStatusWindowFlags = 0;
-    geminiStatusWindowFlags |= ImGuiWindowFlags_NoMove;
-    geminiStatusWindowFlags |= ImGuiWindowFlags_NoTitleBar;
-    geminiStatusWindowFlags |= ImGuiWindowFlags_NoMove;
-    geminiStatusWindowFlags |= ImGuiWindowFlags_NoResize;
-    geminiStatusWindowFlags |= ImGuiWindowFlags_NoCollapse;
-    geminiStatusWindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
+    GuiHandler guiHandler;
+    guiHandler.setupStyles();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
@@ -450,16 +381,16 @@ int main() {
         if (showOverlay) {
             ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
             ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY - guiWindowHeight - guiWindowMargin), ImGuiCond_Appearing);
-            ImGui::Begin("Clipboard", NULL, windowFlags);
+            ImGui::Begin("Clipboard", NULL, guiHandler.clipboardWindowFlags);
 
             // header
             ImGui::AlignTextToFramePadding();
-            ImGui::PushFont(FontBodyBold);
+            ImGui::PushFont(guiHandler.FontBodyBold);
             ImGui::Text("Clipboard");
             ImGui::PopFont();
 
             //
-            ImGui::PushFont(FontBodyRegular);
+            ImGui::PushFont(guiHandler.FontBodyRegular);
 
             // text length
             ImGui::SameLine();
@@ -481,11 +412,11 @@ int main() {
             ImGui::PopFont();
             //
 
-            ImGui::PushFont(FontDisplayRegular);
+            ImGui::PushFont(guiHandler.FontDisplayRegular);
             if (clipboardText.empty()) {
                 ImGui::TextDisabled("No text in your clipboard.");
 
-                ImGui::PushFont(FontBodyRegular);
+                ImGui::PushFont(guiHandler.FontBodyRegular);
                 ImGui::TextDisabled("Copying text to your clipboard will make it available here.");
                 ImGui::PopFont();
             }
@@ -506,12 +437,12 @@ int main() {
             if (shouldShowGeminiKeyPrompt) {
                 //ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
                 ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-                ImGui::PushFont(FontBodyRegular);
+                ImGui::PushFont(guiHandler.FontBodyRegular);
 
-                ImGui::Begin("api key window", NULL, geminiStatusWindowFlags);
+                ImGui::Begin("api key window", NULL, guiHandler.geminiStatusWindowFlags);
 
 
-                ImGui::PushFont(FontBodyBold);
+                ImGui::PushFont(guiHandler.FontBodyBold);
                 ImGui::Text("Settings");
                 ImGui::PopFont();
 
@@ -540,15 +471,20 @@ int main() {
                 if (isClientDoingSomething) {
                     ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
                     ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-                    ImGui::Begin("gemini response", NULL, geminiClient.state == GeminiClient::FINISHED ? selectionWindowFlags : geminiStatusWindowFlags);
-                    ImGui::PushFont(FontBodyRegular);
+                    ImGui::Begin(
+                        "gemini response",
+                        NULL,
+                        geminiClient.state == GeminiClient::FINISHED ? guiHandler.selectionWindowFlags : guiHandler.geminiStatusWindowFlags
+                    );
+
+                    ImGui::PushFont(guiHandler.FontBodyRegular);
 
                     if (geminiClient.state == GeminiClient::RUNNING) {
                         ImGui::Text("Generating suggestions...");
                     }
 
                     if (geminiClient.state == GeminiClient::FAILED) {
-                        ImGui::PushFont(FontBodyBold);
+                        ImGui::PushFont(guiHandler.FontBodyBold);
                         ImGui::TextColored(ImVec4(1.0f, 0.24f, 0.24f, 1.0f), "Sorry!");
                         ImGui::PopFont();
 
@@ -584,15 +520,15 @@ int main() {
                 if (!clipboardText.empty() && !isClientDoingSomething) {
                     // options window
                     ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-                    ImGui::Begin("edit options", NULL, windowFlags);
+                    ImGui::Begin("edit options", NULL, guiHandler.clipboardWindowFlags);
 
-                    ImGui::PushFont(FontBodyBold);
+                    ImGui::PushFont(guiHandler.FontBodyBold);
                     //ImGui::Separator();
                     ImGui::Text("Edit Text");
                     //ImGui::SeparatorText("Edit Text");
                     ImGui::PopFont();
 
-                    ImGui::PushFont(FontBodyRegular);
+                    ImGui::PushFont(guiHandler.FontBodyRegular);
 
                     // https://github.com/ocornut/imgui/issues/1889
                     ImGui::BeginDisabled(isClientDoingSomething);
@@ -629,7 +565,7 @@ int main() {
 
                     ImGui::EndDisabled();
 
-                    ImGui::PushFont(FontBodyBold);
+                    ImGui::PushFont(guiHandler.FontBodyBold);
                     //ImGui::SeparatorText("Reformat into a...");
                     ImGui::Spacing();
                     ImGui::Separator();
