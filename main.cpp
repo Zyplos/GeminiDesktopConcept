@@ -157,21 +157,6 @@ void drawFadedTextOverlay() {
     //ImGui::GetForegroundDrawList()->AddRect(solidCoordsTop, solidCoordsBottom, IM_COL32(255, 0, 0, 255));
 }
 
-// manually position setting button in clipboard window
-// see drawFadedTextOverlay() above
-void drawSettingsButton() {
-    ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-    ImVec2 vMax = ImGui::GetWindowContentRegionMax();
-
-    ImVec2 bottomCorner = ImVec2(vMin.x, vMax.y);
-
-    ImGui::SetCursorPos(bottomCorner);
-
-    if (ImGui::Button("Settings")) {
-        shouldShowGeminiKeyPrompt = true;
-    }
-}
-
 // api key settings
 // imgui.cpp 14862
 // https://github.com/ocornut/imgui/issues/7489
@@ -467,9 +452,31 @@ int main() {
             ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY - guiWindowHeight - guiWindowMargin), ImGuiCond_Appearing);
             ImGui::Begin("Clipboard", NULL, windowFlags);
 
+            // header
+            ImGui::AlignTextToFramePadding();
             ImGui::PushFont(FontBodyBold);
             ImGui::Text("Clipboard");
             ImGui::PopFont();
+
+            //
+            ImGui::PushFont(FontBodyRegular);
+
+            // text length
+            ImGui::SameLine();
+            int clipboardLength = clipboardText.length();
+            ImVec4 alertColor = clipboardLength >= 200 ? ImVec4(1.0f, 0.24f, 0.24f, 1.0f) : ImVec4(0.69f, 0.69f, 0.69f, 1.00f);
+            ImGui::TextColored(alertColor, "%d / 200", clipboardLength);
+
+            // settings button
+            ImGui::SameLine();
+            ImVec2 buttonSize = ImVec2(80.0f, 0);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - buttonSize.x);
+            if (ImGui::Button("Settings", buttonSize)) {
+                shouldShowGeminiKeyPrompt = true;
+            }
+
+            ImGui::PopFont();
+            //
 
             ImGui::PushFont(FontDisplayRegular);
             if (clipboardText.empty()) {
@@ -483,11 +490,10 @@ int main() {
                 ImGui::TextWrapped("%s", clipboardText.c_str());
             }
             ImGui::PopFont();
-
             
             drawFadedTextOverlay();
 
-            //drawSettingsButton();
+            
 
             ImGui::End();
         }
