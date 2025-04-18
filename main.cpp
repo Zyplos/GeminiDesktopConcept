@@ -269,15 +269,6 @@ int main() {
         std::cout << "Hotkey ALT+Q registered successfully.\n";
     }
     
-    // hide overlay window on taskbar
-    // TODO i guess add an icon to the system tray now
-    // https://stackoverflow.com/a/71452357
-    {
-        ShowWindow(hwnd, SW_HIDE);
-        SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_TOOLWINDOW);
-        ShowWindow(hwnd, SW_SHOW);
-    }
-
     // init imgui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
