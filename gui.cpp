@@ -76,3 +76,41 @@ void GuiHandler::setupStyles() {
     geminiStatusWindowFlags |= ImGuiWindowFlags_NoCollapse;
     geminiStatusWindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
 }
+
+void GuiHandler::drawAPIKeyPromptWindow(
+    ImVec2 mouseOrigin, 
+    std::string& GEMINI_KEY, 
+    GeminiClient& geminiClient,
+    bool& shouldShowGeminiKeyPrompt
+) {
+    //ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::PushFont(FontBodyRegular);
+
+    ImGui::Begin("api key window", NULL, geminiStatusWindowFlags);
+
+    ImGui::PushFont(FontBodyBold);
+    ImGui::Text("Settings");
+    ImGui::PopFont();
+
+    ImGui::TextWrapped("You'll need an API Key from AI Studio. Grab one here: ");
+    ImGui::TextLinkOpenURL("https://aistudio.google.com/app/apikey");
+
+    // dummy for spacing
+    // https://github.com/ocornut/imgui/issues/1487
+    ImGui::Dummy(ImVec2(0.0f, 10.0f));
+    std::string biungus = "gungus;";
+    ImGui::InputText("API Key", &GEMINI_KEY, ImGuiInputTextFlags_CharsNoBlank);
+    ImGui::Spacing();
+
+    bool shouldntLetUserSave = GEMINI_KEY.empty() || GEMINI_KEY.length() < 20;
+    ImGui::BeginDisabled(shouldntLetUserSave);
+    if (ImGui::Button("Save") && !shouldntLetUserSave) {
+        geminiClient = GeminiClient(GEMINI_KEY);
+        shouldShowGeminiKeyPrompt = false;
+    }
+    ImGui::EndDisabled();
+
+    ImGui::PopFont();
+    ImGui::End();
+}

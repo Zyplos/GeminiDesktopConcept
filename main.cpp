@@ -435,36 +435,7 @@ int main() {
         // interactive stuff
         if (showOverlay) {
             if (shouldShowGeminiKeyPrompt) {
-                //ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
-                ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-                ImGui::PushFont(guiHandler.FontBodyRegular);
-
-                ImGui::Begin("api key window", NULL, guiHandler.geminiStatusWindowFlags);
-
-
-                ImGui::PushFont(guiHandler.FontBodyBold);
-                ImGui::Text("Settings");
-                ImGui::PopFont();
-
-                // show gemini key prompt before anything else
-                ImGui::TextWrapped("You'll need an API Key from AI Studio. Grab one here: ");
-                ImGui::TextLinkOpenURL("https://aistudio.google.com/app/apikey");
-
-                // https://github.com/ocornut/imgui/issues/1487
-                ImGui::Dummy(ImVec2(0.0f, 10.0f));
-                ImGui::InputText("API Key", &GEMINI_KEY, ImGuiInputTextFlags_CharsNoBlank);
-                ImGui::Spacing();
-
-                bool shouldntLetUserSave = GEMINI_KEY.empty() || GEMINI_KEY.length() < 20;
-                ImGui::BeginDisabled(shouldntLetUserSave);
-                if (ImGui::Button("Save") && !shouldntLetUserSave) { 
-                    geminiClient = GeminiClient(GEMINI_KEY);
-                    shouldShowGeminiKeyPrompt = false; 
-                }
-                ImGui::EndDisabled();
-
-                ImGui::PopFont();
-                ImGui::End();
+                guiHandler.drawAPIKeyPromptWindow(mouseOrigin, GEMINI_KEY, geminiClient, shouldShowGeminiKeyPrompt);
             }
             else {
                 // gemini reponse selector

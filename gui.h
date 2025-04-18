@@ -1,5 +1,8 @@
 #pragma once
+#include <string>
 #include <imgui.h>
+#include <imgui_stdlib.h>
+#include "geminiAPI.hpp"
 
 struct GuiHandler {
     ImFont* FontBodyRegular;
@@ -11,4 +14,11 @@ struct GuiHandler {
     ImGuiWindowFlags geminiStatusWindowFlags;
 
     void setupStyles();
+
+    void drawAPIKeyPromptWindow(
+        ImVec2 mouseOrigin, 
+        std::string& GEMINI_KEY, 
+        GeminiClient& geminiClient,
+        bool& shouldShowGeminiKeyPrompt
+    );
 };
