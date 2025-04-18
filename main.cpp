@@ -32,7 +32,8 @@
 #include "geminiAPI.hpp"
 #include "gui.h"
 
-const GLint WIDTH = 1924, HEIGHT = 1084;
+GLint WIDTH = 1924;
+GLint HEIGHT = 1084;
 bool showOverlay = true;
 std::string clipboardText = "";
 GeminiClient geminiClient("");
@@ -174,6 +175,47 @@ int main() {
         return 1;
     }
 
+    // super window. spans all monitors
+    // solves having to manage windows and monitors and all
+    // TODO normal 1080p window uses 5% of my gpu. super window uses 50%. probably go back to normal window that i move around monitors
+    // credit chatgpt for this snippet
+    int monitorCount;
+    GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+
+    if (monitorCount == 0) {
+        std::cerr << "No monitors found??\n";
+        glfwTerminate();
+        return 1;
+    }
+
+    int minX = INT_MAX;
+    int minY = INT_MAX;
+    int maxX = INT_MIN;
+    int maxY = INT_MIN;
+
+    // Determine bounding box that covers all monitors
+    for (int i = 0; i < monitorCount; ++i) {
+        int x, y;
+        glfwGetMonitorPos(monitors[i], &x, &y);
+
+        const GLFWvidmode* mode = glfwGetVideoMode(monitors[i]);
+        if (!mode) continue;
+
+        int width = mode->width;
+        int height = mode->height;
+
+        minX = std::min(minX, x);
+        minY = std::min(minY, y);
+        maxX = std::max(maxX, x + width);
+        maxY = std::max(maxY, y + height);
+    }
+
+    WIDTH = maxX - minX;
+    HEIGHT = maxY - minY;
+
+    std::cout << "Creating window at (" << minX << ", " << minY << ") with size "
+        << WIDTH << "x" << HEIGHT << "\n";
+
     // setting up opengl window stuff
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -188,12 +230,13 @@ int main() {
     glfwWindowHint(GLFW_FLOATING, GL_TRUE);
 
     // create window
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Test Window", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Latent Writer", NULL, NULL);
     if (!window) {
         std::cout << "window creation failed\n";
         glfwTerminate();
         return 1;
     }
+    glfwSetWindowPos(window, minX, minY);
 
     // set context
     glfwMakeContextCurrent(window);
@@ -224,6 +267,15 @@ int main() {
     }
     else {
         std::cout << "Hotkey ALT+Q registered successfully.\n";
+    }
+    
+    // hide overlay window on taskbar
+    // TODO i guess add an icon to the system tray now
+    // https://stackoverflow.com/a/71452357
+    {
+        ShowWindow(hwnd, SW_HIDE);
+        SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_TOOLWINDOW);
+        ShowWindow(hwnd, SW_SHOW);
     }
 
     // init imgui
