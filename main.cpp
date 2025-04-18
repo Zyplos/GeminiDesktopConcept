@@ -326,6 +326,8 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        ImGui::PushFont(guiHandler.FontBodyRegular);
+
         /*ImGui::Begin("DEBUG");
         ImGui::Text("OVERLAY");
         ImGui::Text("%d", showOverlay);
@@ -378,6 +380,8 @@ int main() {
             // let mouse clicks pass through our window to the desktop
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_TRUE);
         }
+
+        ImGui::PopFont();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

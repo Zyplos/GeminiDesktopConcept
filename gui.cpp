@@ -119,8 +119,6 @@ void GuiHandler::drawAPIKeyPromptWindow(
 ) {
     //ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
     ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-    ImGui::PushFont(FontBodyRegular);
-
     ImGui::Begin("api key window", NULL, geminiStatusWindowFlags);
 
     ImGui::PushFont(FontBodyBold);
@@ -145,7 +143,6 @@ void GuiHandler::drawAPIKeyPromptWindow(
     }
     ImGui::EndDisabled();
 
-    ImGui::PopFont();
     ImGui::End();
 }
 
@@ -159,9 +156,6 @@ void GuiHandler::drawClipboardWindow(std::string& clipboardText, bool& shouldSho
     ImGui::PushFont(FontBodyBold);
     ImGui::Text("Clipboard");
     ImGui::PopFont();
-
-    //
-    ImGui::PushFont(FontBodyRegular);
 
     // text length
     ImGui::SameLine();
@@ -179,9 +173,6 @@ void GuiHandler::drawClipboardWindow(std::string& clipboardText, bool& shouldSho
         shouldShowGeminiKeyPrompt = true;
     }
     ImGui::EndDisabled();
-
-    ImGui::PopFont();
-    //
 
     ImGui::PushFont(FontDisplayRegular);
     if (clipboardText.empty()) {
@@ -206,11 +197,8 @@ void GuiHandler::drawAPIRunningState(GeminiClient& geminiClient) {
     ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
     ImGui::Begin("gemini loading", NULL, geminiStatusWindowFlags);
 
-    ImGui::PushFont(FontBodyRegular);
-
     ImGui::Text("Generating suggestions...");
 
-    ImGui::PopFont();
     ImGui::End();
 }
 
@@ -218,8 +206,6 @@ void GuiHandler::drawAPIFailedState(GeminiClient& geminiClient) {
     ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
     ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
     ImGui::Begin("gemini failed", NULL, geminiStatusWindowFlags);
-
-    ImGui::PushFont(FontBodyRegular);
 
     ImGui::PushFont(FontBodyBold);
     ImGui::TextColored(ImVec4(1.0f, 0.24f, 0.24f, 1.0f), "Sorry!");
@@ -233,7 +219,6 @@ void GuiHandler::drawAPIFailedState(GeminiClient& geminiClient) {
         geminiClient.reset();
     }
 
-    ImGui::PopFont();
     ImGui::End();
 }
 
@@ -245,10 +230,6 @@ void GuiHandler::drawAPIFinishedState(
     ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
     ImGui::Begin("gemini suggestions", NULL, selectionWindowFlags);
 
-    ImGui::PushFont(FontBodyRegular);
-
-   
-
     // TODO make this look good
     for (const std::string suggestion : geminiClient.suggestions) {
         if (ImGui::Button(suggestion.c_str())) { selectionEventHandler(suggestion); }
@@ -259,7 +240,6 @@ void GuiHandler::drawAPIFinishedState(
         geminiClient.reset();
     }
 
-    ImGui::PopFont();
     ImGui::End();
 }
 
@@ -274,8 +254,6 @@ void GuiHandler::drawEditOptionsWindow(
     ImGui::PushFont(FontBodyBold);
     ImGui::Text("Edit Text");
     ImGui::PopFont();
-
-    ImGui::PushFont(FontBodyRegular);
 
     // https://github.com/ocornut/imgui/issues/1889
     ImGui::BeginDisabled(geminiClient.isClientDoingSomething());
@@ -326,6 +304,5 @@ void GuiHandler::drawEditOptionsWindow(
     if (ImGui::Button("Two word phrase")) { selectOptionEventHandler(GeminiClient::PromptType::TWOWORD); }
     ImGui::EndDisabled();
 
-    ImGui::PopFont();
     ImGui::End();
 }
