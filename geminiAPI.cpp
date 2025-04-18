@@ -12,6 +12,10 @@ void GeminiClient::reset() {
     errorFeedback = "";
 }
 
+bool GeminiClient::isClientDoingSomething() {
+    return state != GeminiClient::IDLE;
+}
+
 bool GeminiClient::callAPI(std::string prompt, std::string clipboardText) {
     if (state != State::IDLE) {
         return false;

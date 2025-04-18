@@ -265,7 +265,6 @@ void GuiHandler::drawAPIFinishedState(
 
 void GuiHandler::drawEditOptionsWindow(
     GeminiClient& geminiClient,
-    bool& isClientDoingSomething,
     std::function<void(GeminiClient::PromptType)> selectOptionEventHandler
 ) {
     // options window
@@ -279,7 +278,7 @@ void GuiHandler::drawEditOptionsWindow(
     ImGui::PushFont(FontBodyRegular);
 
     // https://github.com/ocornut/imgui/issues/1889
-    ImGui::BeginDisabled(isClientDoingSomething);
+    ImGui::BeginDisabled(geminiClient.isClientDoingSomething());
 
     if (ImGui::Button("LAYOUT TEST")) {
         geminiClient.debug();
@@ -320,7 +319,7 @@ void GuiHandler::drawEditOptionsWindow(
     ImGui::Text("Reformat into a...");
     ImGui::PopFont();
 
-    ImGui::BeginDisabled(isClientDoingSomething);
+    ImGui::BeginDisabled(geminiClient.isClientDoingSomething());
     if (ImGui::Button("Headline")) { selectOptionEventHandler(GeminiClient::PromptType::HEADLINE); }
     if (ImGui::Button("Tagline")) { selectOptionEventHandler(GeminiClient::PromptType::TAGLINE); }
     if (ImGui::Button("One word phrase")) { selectOptionEventHandler(GeminiClient::PromptType::ONEWORD); }

@@ -327,8 +327,7 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-
-        ImGui::Begin("DEBUG");
+        /*ImGui::Begin("DEBUG");
         ImGui::Text("OVERLAY");
         ImGui::Text("%d", showOverlay);
         ImGui::Text("CLIPBOARD");
@@ -339,10 +338,9 @@ int main() {
         ImGui::TextWrapped(geminiClient.errorFeedback.c_str());
         ImGui::Text("GEMINI_KEY");
         ImGui::TextWrapped(GEMINI_KEY.c_str());
-        ImGui::End();
+        ImGui::End();*/
 
         guiHandler.mouseOrigin = ImVec2(startMouseX, startMouseY);
-        bool isClientDoingSomething = geminiClient.state != GeminiClient::IDLE;
 
         // ===== MAIN GUI STUFF
         // prompt display window
@@ -370,8 +368,8 @@ int main() {
                 }
 
                 // if clipboardText has text and client is idle show options
-                if (!clipboardText.empty() && !isClientDoingSomething) {
-                    guiHandler.drawEditOptionsWindow(geminiClient, isClientDoingSomething, selectOptionEventHandler);
+                if (!clipboardText.empty() && !geminiClient.isClientDoingSomething()) {
+                    guiHandler.drawEditOptionsWindow(geminiClient, selectOptionEventHandler);
                 }
             }
 

@@ -42,7 +42,6 @@ struct GuiHandler {
 
     void drawEditOptionsWindow(
         GeminiClient& geminiClient,
-        bool& isClientDoingSomething,
         std::function<void(GeminiClient::PromptType)> selectOptionEventHandler
     );
 };

@@ -36,6 +36,8 @@ public:
 
     void reset();
 
+    bool isClientDoingSomething();
+
     bool callAPI(std::string prompt, std::string clipboardText);
 
     void processResponse(cpr::Response response);
