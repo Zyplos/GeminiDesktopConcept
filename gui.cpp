@@ -77,6 +77,41 @@ void GuiHandler::setupStyles() {
     geminiStatusWindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
 }
 
+// fade text with transparent rectangle
+void drawFadedTextOverlay() {
+    // https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-how-can-i-display-custom-shapes-using-low-level-imdrawlist-api
+    // imgui_demo.cpp 9646
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    // get rect region
+    // https://github.com/ocornut/imgui/issues/2486#issuecomment-482635607
+    ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+    ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+
+    vMin.x += ImGui::GetWindowPos().x;
+    vMin.y += ImGui::GetWindowPos().y;
+    vMax.x += ImGui::GetWindowPos().x;
+    vMax.y += ImGui::GetWindowPos().y;
+
+    // minus half of window padding and lower top by half of window height
+    vMin.x -= 8.0f;
+    vMin.y += 125.0f;
+    vMax.x += 8.0f;
+    //vMax.y += 10.0f;
+
+    ImU32 transparentColor = ImGui::GetColorU32(IM_COL32(28, 28, 28, 0));
+    ImU32 bodyColor = ImGui::GetColorU32(IM_COL32(28, 28, 28, 255));
+    draw_list->AddRectFilledMultiColor(vMin, vMax, transparentColor, transparentColor, bodyColor, bodyColor);
+    //ImGui::GetForegroundDrawList()->AddRect(vMin, vMax, IM_COL32(255, 255, 0, 255));
+
+    // bottom solid rect part
+    ImVec2 solidCoordsTop = ImVec2(vMin.x, vMax.y);
+    ImVec2 solidCoordsBottom = ImVec2(vMax.x, vMax.y + 15);
+    draw_list->AddRectFilled(solidCoordsTop, solidCoordsBottom, bodyColor, bodyColor);
+    //ImGui::GetForegroundDrawList()->AddRect(solidCoordsTop, solidCoordsBottom, IM_COL32(255, 0, 0, 255));
+}
+
+
 void GuiHandler::drawAPIKeyPromptWindow(
     std::string& GEMINI_KEY, 
     GeminiClient& geminiClient,
@@ -111,6 +146,58 @@ void GuiHandler::drawAPIKeyPromptWindow(
     ImGui::EndDisabled();
 
     ImGui::PopFont();
+    ImGui::End();
+}
+
+void GuiHandler::drawClipboardWindow(std::string& clipboardText, bool& shouldShowGeminiKeyPrompt) {
+    ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+    ImGui::SetNextWindowPos(ImVec2(mouseOrigin.x, mouseOrigin.y - guiWindowHeight - guiWindowMargin), ImGuiCond_Appearing);
+    ImGui::Begin("Clipboard", NULL, clipboardWindowFlags);
+
+    // header
+    ImGui::AlignTextToFramePadding();
+    ImGui::PushFont(FontBodyBold);
+    ImGui::Text("Clipboard");
+    ImGui::PopFont();
+
+    //
+    ImGui::PushFont(FontBodyRegular);
+
+    // text length
+    ImGui::SameLine();
+    int clipboardLength = clipboardText.length();
+    if (clipboardLength > 135) {
+        ImGui::TextDisabled("%d characters", clipboardLength);
+    }
+
+    // settings button
+    ImGui::SameLine();
+    ImVec2 buttonSize = ImVec2(80.0f, 0);
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - buttonSize.x);
+    ImGui::BeginDisabled(shouldShowGeminiKeyPrompt);
+    if (ImGui::Button("Settings", buttonSize)) {
+        shouldShowGeminiKeyPrompt = true;
+    }
+    ImGui::EndDisabled();
+
+    ImGui::PopFont();
+    //
+
+    ImGui::PushFont(FontDisplayRegular);
+    if (clipboardText.empty()) {
+        ImGui::TextDisabled("No text in your clipboard.");
+
+        ImGui::PushFont(FontBodyRegular);
+        ImGui::TextDisabled("Copying text to your clipboard will make it available here.");
+        ImGui::PopFont();
+    }
+    else {
+        ImGui::TextWrapped("%s", clipboardText.c_str());
+    }
+    ImGui::PopFont();
+
+    drawFadedTextOverlay();
+
     ImGui::End();
 }
 

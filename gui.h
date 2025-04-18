@@ -27,6 +27,8 @@ struct GuiHandler {
         bool& shouldShowGeminiKeyPrompt
     );
 
+    void drawClipboardWindow(std::string& clipboardText, bool& shouldShowGeminiKeyPrompt);
+
     void drawAPIRunningState(GeminiClient& geminiClient);
 
     void drawAPIFailedState(GeminiClient& geminiClient);

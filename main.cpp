@@ -124,40 +124,6 @@ std::string getClipboardText() {
     return clipboardText;
 }
 
-// fade text with transparent rectangle
-void drawFadedTextOverlay() {
-    // https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-how-can-i-display-custom-shapes-using-low-level-imdrawlist-api
-    // imgui_demo.cpp 9646
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-    // get rect region
-    // https://github.com/ocornut/imgui/issues/2486#issuecomment-482635607
-    ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-    ImVec2 vMax = ImGui::GetWindowContentRegionMax();
-
-    vMin.x += ImGui::GetWindowPos().x;
-    vMin.y += ImGui::GetWindowPos().y;
-    vMax.x += ImGui::GetWindowPos().x;
-    vMax.y += ImGui::GetWindowPos().y;
-
-    // minus half of window padding and lower top by half of window height
-    vMin.x -= 8.0f;
-    vMin.y += 125.0f;
-    vMax.x += 8.0f;
-    //vMax.y += 10.0f;
-
-    ImU32 transparentColor = ImGui::GetColorU32(IM_COL32(28, 28, 28, 0));
-    ImU32 bodyColor = ImGui::GetColorU32(IM_COL32(28, 28, 28, 255));
-    draw_list->AddRectFilledMultiColor(vMin, vMax, transparentColor, transparentColor, bodyColor, bodyColor);
-    //ImGui::GetForegroundDrawList()->AddRect(vMin, vMax, IM_COL32(255, 255, 0, 255));
-
-    // bottom solid rect part
-    ImVec2 solidCoordsTop = ImVec2(vMin.x, vMax.y);
-    ImVec2 solidCoordsBottom = ImVec2(vMax.x, vMax.y + 15);
-    draw_list->AddRectFilled(solidCoordsTop, solidCoordsBottom, bodyColor, bodyColor);
-    //ImGui::GetForegroundDrawList()->AddRect(solidCoordsTop, solidCoordsBottom, IM_COL32(255, 0, 0, 255));
-}
-
 // api key settings
 // imgui.cpp 14862
 // https://github.com/ocornut/imgui/issues/7489
@@ -377,63 +343,15 @@ int main() {
         ImGui::TextWrapped(GEMINI_KEY.c_str());
         ImGui::End();
 
-        // ===== MAIN GUI STUFF
-        // prompt display window
-        if (showOverlay) {
-            ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
-            ImGui::SetNextWindowPos(ImVec2(startMouseX, startMouseY - guiWindowHeight - guiWindowMargin), ImGuiCond_Appearing);
-            ImGui::Begin("Clipboard", NULL, guiHandler.clipboardWindowFlags);
-
-            // header
-            ImGui::AlignTextToFramePadding();
-            ImGui::PushFont(guiHandler.FontBodyBold);
-            ImGui::Text("Clipboard");
-            ImGui::PopFont();
-
-            //
-            ImGui::PushFont(guiHandler.FontBodyRegular);
-
-            // text length
-            ImGui::SameLine();
-            int clipboardLength = clipboardText.length();
-            if (clipboardLength > 135) {
-                ImGui::TextDisabled("%d characters", clipboardLength);
-            }
-
-            // settings button
-            ImGui::SameLine();
-            ImVec2 buttonSize = ImVec2(80.0f, 0);
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - buttonSize.x);
-            ImGui::BeginDisabled(shouldShowGeminiKeyPrompt);
-            if (ImGui::Button("Settings", buttonSize)) {
-                shouldShowGeminiKeyPrompt = true;
-            }
-            ImGui::EndDisabled();
-
-            ImGui::PopFont();
-            //
-
-            ImGui::PushFont(guiHandler.FontDisplayRegular);
-            if (clipboardText.empty()) {
-                ImGui::TextDisabled("No text in your clipboard.");
-
-                ImGui::PushFont(guiHandler.FontBodyRegular);
-                ImGui::TextDisabled("Copying text to your clipboard will make it available here.");
-                ImGui::PopFont();
-            }
-            else {
-                ImGui::TextWrapped("%s", clipboardText.c_str());
-            }
-            ImGui::PopFont();
-            
-            drawFadedTextOverlay();
-
-            ImGui::End();
-        }
-
         // TODO remove this once everythings moved to gui.cpp
         ImVec2 mouseOrigin = ImVec2(startMouseX, startMouseY);
         guiHandler.mouseOrigin = mouseOrigin;
+
+        // ===== MAIN GUI STUFF
+        // prompt display window
+        if (showOverlay) {
+            guiHandler.drawClipboardWindow(clipboardText, shouldShowGeminiKeyPrompt);
+        }
 
         // interactive stuff
         if (showOverlay) {
