@@ -107,7 +107,7 @@ void drawFadedTextOverlay() {
     // bottom solid rect part
     ImVec2 solidCoordsTop = ImVec2(vMin.x, vMax.y);
     ImVec2 solidCoordsBottom = ImVec2(vMax.x, vMax.y + 15);
-    draw_list->AddRectFilled(solidCoordsTop, solidCoordsBottom, bodyColor, bodyColor);
+    draw_list->AddRectFilled(solidCoordsTop, solidCoordsBottom, bodyColor);
     //ImGui::GetForegroundDrawList()->AddRect(solidCoordsTop, solidCoordsBottom, IM_COL32(255, 0, 0, 255));
 }
 
@@ -165,9 +165,9 @@ void GuiHandler::drawClipboardWindow(std::string& clipboardText, bool& shouldSho
 
     // text length
     ImGui::SameLine();
-    int clipboardLength = clipboardText.length();
+    size_t clipboardLength = clipboardText.length();
     if (clipboardLength > 135) {
-        ImGui::TextDisabled("%d characters", clipboardLength);
+        ImGui::TextDisabled("%zu characters", clipboardLength);
     }
 
     // settings button

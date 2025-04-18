@@ -1,4 +1,13 @@
 #include <iostream>
+#include <random>
+#include <algorithm>
+
+// gemini suggested these for windows include
+// https://stackoverflow.com/questions/11040133/what-does-defining-win32-lean-and-mean-exclude-exactly
+#define WIN32_LEAN_AND_MEAN
+// windows messes with min/max, this fixes a warning
+#define NOMINMAX
+#include <Windows.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -12,16 +21,14 @@
 // needed for global keyboard shortcuts
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h> // For glfwGetWin32Window
-#include <Windows.h>
-// windows messes with these?
+
+// NOMINMAX fixes a warning but keep these just in case
 #undef max
 #undef min
 
 #define MY_HOTKEY_ID 137
 
 #include "graphics.h"
-#include <random>
-#include <algorithm>
 #include "geminiAPI.hpp"
 #include "gui.h"
 
@@ -332,7 +339,7 @@ int main() {
         ImGui::TextWrapped(GEMINI_KEY.c_str());
         ImGui::End();*/
 
-        guiHandler.mouseOrigin = ImVec2(startMouseX, startMouseY);
+        guiHandler.mouseOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
 
         // ===== MAIN GUI STUFF
         // prompt display window
