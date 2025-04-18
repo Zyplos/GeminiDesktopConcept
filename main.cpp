@@ -242,24 +242,16 @@ int main() {
     // ===== shader variables
     float simplexOffsetX = 0.0f;
     float simplexOffsetY = 0.0f;
-    float revealStartTime = -10.0f; // Time overlay was last shown (-ve means inactive)
-    float revealMouseX = 0.5f;    // Mouse X at reveal (normalized 0-1)
-    float revealMouseY = 0.5f;    // Mouse Y at reveal (normalized 0-1)
-    std::random_device rd;  // Obtain a random number from hardware
-    std::mt19937 gen(rd()); // Seed the generator
+    float revealStartTime = -10.0f;   // Time overlay was last shown
+    float revealMouseX = 0.5f;        // Mouse X at reveal (normalized 0-1)
+    float revealMouseY = 0.5f;        // Mouse Y at reveal (normalized 0-1)
+    std::random_device rd;            // Obtain a random number from hardware
+    std::mt19937 gen(rd());           // Seed the generator
     // Define range for random offset (large values ensure different parts of noise field)
     std::uniform_real_distribution<float> distrib(-1000.0f, 1000.0f);
 
     double startMouseX = 0;
     double startMouseY = 0;
-    // TODO remove this once everythings in gui.cpp
-    float guiWindowWidth = 500;
-    float guiWindowHeight = 175;
-    float guiWindowMargin = 10;
-
-    std::string longString = "With its long, thin wings, it catches updrafts and flies like a glider high up into the sky. Should one of the six be lost, the next morning there will once more be six. It is so dense, while on a run it forgets why it started running in the first place.";
-
-    std::string shortString = "When flames drip from its nose, that means it has a cold.";
     
     // ===== MAIN DRAW LOOP
     while (!glfwWindowShouldClose(window)) {
