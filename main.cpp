@@ -286,6 +286,7 @@ int main() {
 
     double startMouseX = 0;
     double startMouseY = 0;
+    // TODO remove this once everythings in gui.cpp
     float guiWindowWidth = 500;
     float guiWindowHeight = 175;
     float guiWindowMargin = 10;
@@ -430,61 +431,27 @@ int main() {
             ImGui::End();
         }
 
+        // TODO remove this once everythings moved to gui.cpp
         ImVec2 mouseOrigin = ImVec2(startMouseX, startMouseY);
+        guiHandler.mouseOrigin = mouseOrigin;
 
         // interactive stuff
         if (showOverlay) {
             if (shouldShowGeminiKeyPrompt) {
-                guiHandler.drawAPIKeyPromptWindow(mouseOrigin, GEMINI_KEY, geminiClient, shouldShowGeminiKeyPrompt);
+                guiHandler.drawAPIKeyPromptWindow(GEMINI_KEY, geminiClient, shouldShowGeminiKeyPrompt);
             }
             else {
                 // gemini reponse selector
-                if (isClientDoingSomething) {
-                    ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
-                    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-                    ImGui::Begin(
-                        "gemini response",
-                        NULL,
-                        geminiClient.state == GeminiClient::FINISHED ? guiHandler.selectionWindowFlags : guiHandler.geminiStatusWindowFlags
-                    );
+                if (geminiClient.state == GeminiClient::RUNNING) {
+                    guiHandler.drawAPIRunningState(geminiClient);
+                }
 
-                    ImGui::PushFont(guiHandler.FontBodyRegular);
+                if (geminiClient.state == GeminiClient::FAILED) {
+                    guiHandler.drawAPIFailedState(geminiClient);
+                }
 
-                    if (geminiClient.state == GeminiClient::RUNNING) {
-                        ImGui::Text("Generating suggestions...");
-                    }
-
-                    if (geminiClient.state == GeminiClient::FAILED) {
-                        ImGui::PushFont(guiHandler.FontBodyBold);
-                        ImGui::TextColored(ImVec4(1.0f, 0.24f, 0.24f, 1.0f), "Sorry!");
-                        ImGui::PopFont();
-
-                        ImGui::Text("Couldn't get suggestions.");
-                        ImGui::TextWrapped(geminiClient.errorFeedback.c_str());
-
-                        ImGui::Spacing();
-                        if (ImGui::Button("Try again")) {
-                            geminiClient.reset();
-                        }
-                    }
-
-                    /*
-                    if api returns 1 option: replace clipboard
-                    more than 2 show a selection thing
-                    */
-                    if (geminiClient.state == GeminiClient::FINISHED) {
-                        for (const std::string suggestion : geminiClient.suggestions) {
-                            if (ImGui::Button(suggestion.c_str())) { handleSelectionClick(suggestion); }
-                        }
-
-                        ImGui::Spacing();
-                        if (ImGui::Button("Reset")) {
-                            geminiClient.reset();
-                        }
-                    }
-
-                    ImGui::PopFont();
-                    ImGui::End();
+                if (geminiClient.state == GeminiClient::FINISHED) {
+                    guiHandler.drawAPIFinishedState(geminiClient, handleSelectionClick);
                 }
 
                 // if clipboardText has text and client is idle show options

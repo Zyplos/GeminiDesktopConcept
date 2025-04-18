@@ -78,7 +78,6 @@ void GuiHandler::setupStyles() {
 }
 
 void GuiHandler::drawAPIKeyPromptWindow(
-    ImVec2 mouseOrigin, 
     std::string& GEMINI_KEY, 
     GeminiClient& geminiClient,
     bool& shouldShowGeminiKeyPrompt
@@ -110,6 +109,68 @@ void GuiHandler::drawAPIKeyPromptWindow(
         shouldShowGeminiKeyPrompt = false;
     }
     ImGui::EndDisabled();
+
+    ImGui::PopFont();
+    ImGui::End();
+}
+
+void GuiHandler::drawAPIRunningState(GeminiClient& geminiClient) {
+    ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::Begin("gemini loading", NULL, geminiStatusWindowFlags);
+
+    ImGui::PushFont(FontBodyRegular);
+
+    ImGui::Text("Generating suggestions...");
+
+    ImGui::PopFont();
+    ImGui::End();
+}
+
+void GuiHandler::drawAPIFailedState(GeminiClient& geminiClient) {
+    ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::Begin("gemini failed", NULL, geminiStatusWindowFlags);
+
+    ImGui::PushFont(FontBodyRegular);
+
+    ImGui::PushFont(FontBodyBold);
+    ImGui::TextColored(ImVec4(1.0f, 0.24f, 0.24f, 1.0f), "Sorry!");
+    ImGui::PopFont();
+
+    ImGui::Text("Couldn't get suggestions.");
+    ImGui::TextWrapped(geminiClient.errorFeedback.c_str());
+
+    ImGui::Spacing();
+    if (ImGui::Button("Try again")) {
+        geminiClient.reset();
+    }
+
+    ImGui::PopFont();
+    ImGui::End();
+}
+
+void GuiHandler::drawAPIFinishedState(
+    GeminiClient& geminiClient,
+    std::function<void(std::string)> selectionEventHandler
+) {
+    ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::Begin("gemini suggestions", NULL, selectionWindowFlags);
+
+    ImGui::PushFont(FontBodyRegular);
+
+   
+
+    // TODO make this look good
+    for (const std::string suggestion : geminiClient.suggestions) {
+        if (ImGui::Button(suggestion.c_str())) { selectionEventHandler(suggestion); }
+    }
+
+    ImGui::Spacing();
+    if (ImGui::Button("Reset")) {
+        geminiClient.reset();
+    }
 
     ImGui::PopFont();
     ImGui::End();
