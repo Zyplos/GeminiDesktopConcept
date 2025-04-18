@@ -35,7 +35,7 @@ std::string GEMINI_KEY = "";
 // so show the key prompt by default. UserData_ReadLine will set this to false on launch
 bool shouldShowGeminiKeyPrompt = true;
 
-void handleButtonClick(GeminiClient::PromptType type) {
+void selectOptionEventHandler(GeminiClient::PromptType type) {
     // gui hides buttons if text is empty but we'll put this here just incase
     if (clipboardText.empty()) {
         return;
@@ -55,7 +55,7 @@ void handleButtonClick(GeminiClient::PromptType type) {
     geminiClient.callAPI(prompt, clipboardText);
 }
 
-void handleSelectionClick(std::string suggestion) {
+void handleSuggestionClick(std::string suggestion) {
     // dont use this https://github.com/ocornut/imgui/discussions/4021
     /*ImGui::LogToClipboard();
     ImGui::LogText(suggestion.c_str());
@@ -327,8 +327,6 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        bool isClientDoingSomething = geminiClient.state != GeminiClient::IDLE;
-
 
         ImGui::Begin("DEBUG");
         ImGui::Text("OVERLAY");
@@ -343,9 +341,8 @@ int main() {
         ImGui::TextWrapped(GEMINI_KEY.c_str());
         ImGui::End();
 
-        // TODO remove this once everythings moved to gui.cpp
-        ImVec2 mouseOrigin = ImVec2(startMouseX, startMouseY);
-        guiHandler.mouseOrigin = mouseOrigin;
+        guiHandler.mouseOrigin = ImVec2(startMouseX, startMouseY);
+        bool isClientDoingSomething = geminiClient.state != GeminiClient::IDLE;
 
         // ===== MAIN GUI STUFF
         // prompt display window
@@ -369,75 +366,12 @@ int main() {
                 }
 
                 if (geminiClient.state == GeminiClient::FINISHED) {
-                    guiHandler.drawAPIFinishedState(geminiClient, handleSelectionClick);
+                    guiHandler.drawAPIFinishedState(geminiClient, handleSuggestionClick);
                 }
 
                 // if clipboardText has text and client is idle show options
                 if (!clipboardText.empty() && !isClientDoingSomething) {
-                    // options window
-                    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
-                    ImGui::Begin("edit options", NULL, guiHandler.clipboardWindowFlags);
-
-                    ImGui::PushFont(guiHandler.FontBodyBold);
-                    //ImGui::Separator();
-                    ImGui::Text("Edit Text");
-                    //ImGui::SeparatorText("Edit Text");
-                    ImGui::PopFont();
-
-                    ImGui::PushFont(guiHandler.FontBodyRegular);
-
-                    // https://github.com/ocornut/imgui/issues/1889
-                    ImGui::BeginDisabled(isClientDoingSomething);
-
-                    if (ImGui::Button("LAYOUT TEST")) { 
-                        geminiClient.debug();
-                    }
-
-
-                    if (ImGui::Button("Synonyms for...")) { handleButtonClick(GeminiClient::PromptType::SYNONYMS); }
-                    ImGui::SetItemTooltip("Get synonyms for a word\nWill also rephrase sentences");
-
-                    //if (ImGui::Button("Rephrase...")) { handleButtonClick(GeminiClient::PromptType::REPHRASE); }
-
-                    if (ImGui::Button("Rewrite formally...")) { handleButtonClick(GeminiClient::PromptType::FORMALIZE); }
-                    ImGui::SetItemTooltip("Keep it professional");
-
-                    if (ImGui::Button("Antonyms for...")) { handleButtonClick(GeminiClient::PromptType::ANTONYMS); }
-                    ImGui::SetItemTooltip("Get antonyms for a word\nWill rewrite your clipboard to mean the opposite");
-
-                    if (ImGui::Button("Shorten...")) { handleButtonClick(GeminiClient::PromptType::SHORTEN); }
-                    ImGui::SetItemTooltip("Rewrites the content of your clipboard to be shorter");
-
-                    if (ImGui::Button("Ungarble...")) { handleButtonClick(GeminiClient::PromptType::UNGARBLE); }
-                    if (ImGui::BeginItemTooltip())
-                    {
-                        ImGui::Text("Will rewrite sentences that don't sound quite right, useful for:");
-                        ImGui::BulletText("Gramatically incorrect sentences");
-                        ImGui::BulletText("Fixing incorrect word usage");
-                        ImGui::BulletText("Run on sentences");
-
-                        ImGui::EndTooltip();
-                    }
-
-                    ImGui::EndDisabled();
-
-                    ImGui::PushFont(guiHandler.FontBodyBold);
-                    //ImGui::SeparatorText("Reformat into a...");
-                    ImGui::Spacing();
-                    ImGui::Separator();
-                    ImGui::Spacing();
-                    ImGui::Text("Reformat into a...");
-                    ImGui::PopFont();
-
-                    ImGui::BeginDisabled(isClientDoingSomething);
-                    if (ImGui::Button("Headline")) { handleButtonClick(GeminiClient::PromptType::HEADLINE); }
-                    if (ImGui::Button("Tagline")) { handleButtonClick(GeminiClient::PromptType::TAGLINE); }
-                    if (ImGui::Button("One word phrase")) { handleButtonClick(GeminiClient::PromptType::ONEWORD); }
-                    if (ImGui::Button("Two word phrase")) { handleButtonClick(GeminiClient::PromptType::TWOWORD); }
-                    ImGui::EndDisabled();
-
-                    ImGui::PopFont();
-                    ImGui::End();
+                    guiHandler.drawEditOptionsWindow(geminiClient, isClientDoingSomething, selectOptionEventHandler);
                 }
             }
 

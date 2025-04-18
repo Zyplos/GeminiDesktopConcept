@@ -21,6 +21,8 @@ struct GuiHandler {
 
     void setupStyles();
 
+    // NOTE repetitively passing a bunch of the same stuff in these functions
+    // probably make some AppState struct thing that holds this stuff if I ever expand on this project
     void drawAPIKeyPromptWindow(
         std::string& GEMINI_KEY, 
         GeminiClient& geminiClient,
@@ -37,4 +39,10 @@ struct GuiHandler {
     void drawAPIFinishedState(
         GeminiClient& geminiClient,
         std::function<void(std::string)> selectionEventHandler);
+
+    void drawEditOptionsWindow(
+        GeminiClient& geminiClient,
+        bool& isClientDoingSomething,
+        std::function<void(GeminiClient::PromptType)> selectOptionEventHandler
+    );
 };

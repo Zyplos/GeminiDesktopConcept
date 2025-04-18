@@ -262,3 +262,71 @@ void GuiHandler::drawAPIFinishedState(
     ImGui::PopFont();
     ImGui::End();
 }
+
+void GuiHandler::drawEditOptionsWindow(
+    GeminiClient& geminiClient,
+    bool& isClientDoingSomething,
+    std::function<void(GeminiClient::PromptType)> selectOptionEventHandler
+) {
+    // options window
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::Begin("edit options", NULL, clipboardWindowFlags);
+
+    ImGui::PushFont(FontBodyBold);
+    ImGui::Text("Edit Text");
+    ImGui::PopFont();
+
+    ImGui::PushFont(FontBodyRegular);
+
+    // https://github.com/ocornut/imgui/issues/1889
+    ImGui::BeginDisabled(isClientDoingSomething);
+
+    if (ImGui::Button("LAYOUT TEST")) {
+        geminiClient.debug();
+    }
+
+    if (ImGui::Button("Synonyms for...")) { selectOptionEventHandler(GeminiClient::PromptType::SYNONYMS); }
+    ImGui::SetItemTooltip("Get synonyms for a word\nWill also rephrase sentences");
+
+    //if (ImGui::Button("Rephrase...")) { handleButtonClick(GeminiClient::PromptType::REPHRASE); }
+
+    if (ImGui::Button("Rewrite formally...")) { selectOptionEventHandler(GeminiClient::PromptType::FORMALIZE); }
+    ImGui::SetItemTooltip("Keep it professional");
+
+    if (ImGui::Button("Antonyms for...")) { selectOptionEventHandler(GeminiClient::PromptType::ANTONYMS); }
+    ImGui::SetItemTooltip("Get antonyms for a word\nWill rewrite your clipboard to mean the opposite");
+
+    if (ImGui::Button("Shorten...")) { selectOptionEventHandler(GeminiClient::PromptType::SHORTEN); }
+    ImGui::SetItemTooltip("Rewrites the content of your clipboard to be shorter");
+
+    if (ImGui::Button("Ungarble...")) { selectOptionEventHandler(GeminiClient::PromptType::UNGARBLE); }
+    if (ImGui::BeginItemTooltip())
+    {
+        ImGui::Text("Will rewrite sentences that don't sound quite right, useful for:");
+        ImGui::BulletText("Gramatically incorrect sentences");
+        ImGui::BulletText("Fixing incorrect word usage");
+        ImGui::BulletText("Run on sentences");
+
+        ImGui::EndTooltip();
+    }
+
+    ImGui::EndDisabled();
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    ImGui::PushFont(FontBodyBold);
+    ImGui::Text("Reformat into a...");
+    ImGui::PopFont();
+
+    ImGui::BeginDisabled(isClientDoingSomething);
+    if (ImGui::Button("Headline")) { selectOptionEventHandler(GeminiClient::PromptType::HEADLINE); }
+    if (ImGui::Button("Tagline")) { selectOptionEventHandler(GeminiClient::PromptType::TAGLINE); }
+    if (ImGui::Button("One word phrase")) { selectOptionEventHandler(GeminiClient::PromptType::ONEWORD); }
+    if (ImGui::Button("Two word phrase")) { selectOptionEventHandler(GeminiClient::PromptType::TWOWORD); }
+    ImGui::EndDisabled();
+
+    ImGui::PopFont();
+    ImGui::End();
+}
