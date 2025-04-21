@@ -16,6 +16,7 @@ void GuiHandler::setupStyles() {
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowBorderSize = 1.f;
     style.WindowPadding = ImVec2(16.0f, 16.0f);
+    style.FramePadding = ImVec2(10.0f, 4.0f);
     style.WindowRounding = 8.0f;
     style.ChildRounding = 8.0f;
     style.FrameRounding = 8.0f;
@@ -45,6 +46,10 @@ void GuiHandler::setupStyles() {
     colors[ImGuiCol_HeaderActive] = ImVec4(0.24f, 0.25f, 0.27f, 1.00f);
     colors[ImGuiCol_DragDropTarget] = ImVec4(0.15f, 0.45f, 1.00f, 0.90f);
     colors[ImGuiCol_TextDisabled] = ImVec4(0.69f, 0.69f, 0.69f, 1.00f);
+    colors[ImGuiCol_ScrollbarBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.53f, 0.66f, 1.00f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.63f, 0.73f, 1.00f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.82f, 0.87f, 1.00f, 1.00f);
 
 
 
@@ -226,21 +231,111 @@ void GuiHandler::drawAPIFinishedState(
     GeminiClient& geminiClient,
     std::function<void(std::string)> selectionEventHandler
 ) {
-    ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
+    ImGuiStyle& style = ImGui::GetStyle();
+    // grab window padding before overriding it to 0
+    ImVec2 windowPadding = style.WindowPadding;
+    ImVec2 framePadding = style.FramePadding;
+
+    ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight * 2));
     ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(1.0f, 1.0f));
     ImGui::Begin("gemini suggestions", NULL, selectionWindowFlags);
 
-    // TODO make this look good
-    for (const std::string suggestion : geminiClient.suggestions) {
-        if (ImGui::Button(suggestion.c_str())) { selectionEventHandler(suggestion); }
-    }
+    // ===== draw window header
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    ImVec2 startingCorner = ImGui::GetCursorScreenPos();
 
-    ImGui::Spacing();
+    ImGui::PushFont(FontBodyBold);
+    // tiny bit of offset to align with the button
+    ImVec2 textSize = ImGui::CalcTextSize("Suggestions");
+    float buttonAlignOffset = (ImGui::GetFrameHeight() - textSize.y) * 0.5f;
+
+    // background rect
+    ImVec2 headerBgCoordTop = startingCorner;
+    headerBgCoordTop.y += buttonAlignOffset;
+    ImVec2 headerBgCoordBottom = ImVec2(
+        headerBgCoordTop.x + textSize.x + windowPadding.x * 2,
+        headerBgCoordTop.y + textSize.y + framePadding.y * 2
+    );
+
+    ImU32 windowBgColor = ImGui::GetColorU32(ImGuiCol_WindowBg);
+    ImU32 borderColor = ImGui::GetColorU32(ImGuiCol_Border);
+    draw_list->AddRectFilled(headerBgCoordTop, headerBgCoordBottom, windowBgColor, style.WindowRounding);
+    draw_list->AddRect(headerBgCoordTop, headerBgCoordBottom, borderColor, style.WindowRounding, 0, 1.0f);
+
+    // ===== draw header text
+    ImGui::SetCursorScreenPos(ImVec2(
+        startingCorner.x + windowPadding.x,
+        startingCorner.y + framePadding.y
+    ));
+    
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Suggestions");
+    ImGui::PopFont();
+
+    ImGui::SameLine();
+    ImGui::Dummy(ImVec2(6.0f, 0));
+    ImGui::SameLine();
     if (ImGui::Button("Reset")) {
         geminiClient.reset();
     }
 
+    ImGui::Spacing();
+
+    // ===== actual suggestions window
+    ImGui::BeginChild("ChildL", ImVec2(ImGui::GetContentRegionAvail().x, 0), ImGuiChildFlags_None);
+
+    float availableWidth = ImGui::GetContentRegionAvail().x;
+    // avoid zero or negative width
+    if (availableWidth <= 0.0f) {
+        availableWidth = 1.0f;
+    }
+
+    for (size_t i = 0; i < geminiClient.suggestions.size(); ++i) {
+        const std::string& suggestion = geminiClient.suggestions[i];
+        std::string buttonId = "##s" + std::to_string(i);
+
+        // ===== calc sizes
+        float textWrapWidth = availableWidth - windowPadding.x * 2.0f;
+        // avoid zero or negative width
+        if (textWrapWidth <= 0.0f) {
+            textWrapWidth = 1.0f;
+        }
+
+        ImVec2 textSize = ImGui::CalcTextSize(suggestion.c_str(), nullptr, false, textWrapWidth);
+
+        // availableWidth incluces the x padding we substracted up top
+        ImVec2 buttonSize = ImVec2(
+            availableWidth,
+            textSize.y + windowPadding.y * 2.0f
+        );
+
+        // ===== draw button and text
+        if (ImGui::Button(buttonId.c_str(), buttonSize)) {
+            selectionEventHandler(suggestion);
+        }
+
+        ImVec2 buttonCorner = ImGui::GetItemRectMin();
+        buttonCorner.x += windowPadding.x;
+        buttonCorner.y += windowPadding.y;
+
+        ImGui::GetWindowDrawList()->AddText(
+            ImGui::GetFont(),
+            ImGui::GetFontSize(),
+            buttonCorner,
+            ImGui::GetColorU32(ImGuiCol_Text),
+            suggestion.c_str(),
+            nullptr,
+            textWrapWidth
+        );
+
+         ImGui::Spacing();
+    }
+
+    ImGui::EndChild();
+
     ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 void GuiHandler::drawEditOptionsWindow(
