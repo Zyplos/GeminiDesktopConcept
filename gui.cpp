@@ -353,10 +353,6 @@ void GuiHandler::drawEditOptionsWindow(
     // https://github.com/ocornut/imgui/issues/1889
     ImGui::BeginDisabled(geminiClient.isClientDoingSomething());
 
-    if (ImGui::Button("LAYOUT TEST")) {
-        geminiClient.debug();
-    }
-
     if (ImGui::Button("Synonyms for...")) { selectOptionEventHandler(GeminiClient::PromptType::SYNONYMS); }
     ImGui::SetItemTooltip("Get synonyms for a word\nWill also rephrase sentences");
 
