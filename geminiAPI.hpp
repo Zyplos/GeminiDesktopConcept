@@ -43,6 +43,4 @@ public:
     void processResponse(cpr::Response response);
 
     std::string getPrompt(PromptType type);
-
-    void debug();
 };
