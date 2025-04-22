@@ -32,9 +32,15 @@
 #include "geminiAPI.hpp"
 #include "gui.h"
 
+GLFWwindow* window;
+
 GLint WIDTH = 1924;
 GLint HEIGHT = 1084;
+int bufferWidth, bufferHeight;
+
 bool showOverlay = true;
+bool superWindow = false;
+
 std::string clipboardText = "";
 GeminiClient geminiClient("");
 std::string GEMINI_KEY = "";
@@ -132,60 +138,16 @@ std::string getClipboardText() {
     return clipboardText;
 }
 
-// api key settings
-// imgui.cpp 14862
-// https://github.com/ocornut/imgui/issues/7489
-void* UserData_ReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name) {
-    return (void*)name;
-}
-
-void UserData_ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line) {
-    std::cout << "READING CONFIG" << std::endl;
-    std::cout << line << std::endl; 
-
-    const char* prefix = "GeminiKey=";
-    size_t prefix_len = strlen(prefix);
-
-    if (strncmp(line, prefix, prefix_len) == 0) {
-        const char* value = line + prefix_len;
-        GEMINI_KEY = std::string(value);
-        std::cout << "GeminiKey Loaded: " << GEMINI_KEY << std::endl;
-        geminiClient = GeminiClient(GEMINI_KEY);
-        if (GEMINI_KEY.empty()) {
-            std::cout << "??? GeminiKey empty (default?)" << std::endl;
-            shouldShowGeminiKeyPrompt = true;
-        }
-        else {
-            shouldShowGeminiKeyPrompt = false;
-        }
-    }
-}
-
-void UserData_WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
-    std::cout << "SAVING SETTINGS?" << std::endl;
-    buf->appendf("[%s][%s]\n", "UserData", "Gemini");
-    buf->appendf("GeminiKey=%s\n", GEMINI_KEY.c_str());
-    buf->append("\n");
-}
-
-int main() {
-    if (!glfwInit()) {
-        std::cout << "GLFW failed\n";
-        glfwTerminate();
-        return 1;
-    }
-
-    // super window. spans all monitors
-    // solves having to manage windows and monitors and all
-    // TODO normal 1080p window uses 5% of my gpu. super window uses 50%. probably go back to normal window that i move around monitors
-    // credit chatgpt for this snippet
+// super window. spans all monitors
+// credit chatgpt for this snippet
+bool enableSuperWindow() {
     int monitorCount;
     GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
 
     if (monitorCount == 0) {
         std::cerr << "No monitors found??\n";
         glfwTerminate();
-        return 1;
+        return false;
     }
 
     int minX = INT_MAX;
@@ -213,8 +175,70 @@ int main() {
     WIDTH = maxX - minX;
     HEIGHT = maxY - minY;
 
-    std::cout << "Creating window at (" << minX << ", " << minY << ") with size "
+    std::cout << "Super window size: (" << minX << ", " << minY << ") with size "
         << WIDTH << "x" << HEIGHT << "\n";
+
+    glfwSetWindowSize(window, WIDTH, HEIGHT);
+    glfwSetWindowPos(window, minX, minY);
+    glfwGetFramebufferSize(window, &bufferWidth, &bufferHeight);
+    glViewport(0, 0, bufferWidth, bufferHeight);
+
+    return true;
+}
+
+// api key settings
+// imgui.cpp 14862
+// https://github.com/ocornut/imgui/issues/7489
+void* UserData_ReadOpen(ImGuiContext*, ImGuiSettingsHandler*, const char* name) {
+    return (void*)name;
+}
+
+void UserData_ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line) {
+    std::cout << "READING CONFIG" << std::endl;
+    std::cout << line << std::endl; 
+
+    const char* prefix = "GeminiKey=";
+    size_t prefix_len = strlen(prefix);
+
+    if (strncmp(line, prefix, prefix_len) == 0) {
+        const char* value = line + prefix_len;
+        GEMINI_KEY = std::string(value);
+        std::cout << "GeminiKey Loaded: " << GEMINI_KEY << std::endl;
+        geminiClient = GeminiClient(GEMINI_KEY);
+        if (GEMINI_KEY.empty()) {
+            std::cout << "??? GeminiKey empty (default?)" << std::endl;
+            shouldShowGeminiKeyPrompt = true;
+        }
+        else {
+            shouldShowGeminiKeyPrompt = false;
+        }
+    }
+
+    int i;
+    if (sscanf_s(line, "SuperWindow=%d", &i) == 1) { 
+        superWindow = (i != 0); 
+        if (superWindow) {
+            std::cout << "ENABLING SUPER WINDOWN IN SETTINGS\n";
+            enableSuperWindow();
+        }
+    }
+}
+
+void UserData_WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
+    std::cout << "SAVING SETTINGS?" << std::endl;
+    buf->appendf("[%s][%s]\n", "UserData", "Gemini");
+    buf->appendf("GeminiKey=%s\n", GEMINI_KEY.c_str());
+    buf->appendf("SuperWindow=%d\n", superWindow);
+    buf->append("\n");
+}
+
+
+int main() {
+    if (!glfwInit()) {
+        std::cout << "GLFW failed\n";
+        glfwTerminate();
+        return 1;
+    }
 
     // setting up opengl window stuff
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -230,14 +254,13 @@ int main() {
     glfwWindowHint(GLFW_FLOATING, GL_TRUE);
 
     // create window
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Latent Writer", NULL, NULL);
+    window = glfwCreateWindow(WIDTH, HEIGHT, "Latent Writer", NULL, NULL);
     if (!window) {
         std::cout << "window creation failed\n";
         glfwTerminate();
         return 1;
     }
-    glfwSetWindowPos(window, minX, minY);
-
+    
     // set context
     glfwMakeContextCurrent(window);
 
@@ -245,7 +268,6 @@ int main() {
     gladLoadGL();
 
     // get frame buffer size
-    int bufferWidth, bufferHeight;
     glfwGetFramebufferSize(window, &bufferWidth, &bufferHeight);
     glViewport(0, 0, bufferWidth, bufferHeight);
 
@@ -300,9 +322,9 @@ int main() {
     // Define range for random offset (large values ensure different parts of noise field)
     std::uniform_real_distribution<float> distrib(-1000.0f, 1000.0f);
 
-    double startMouseX = 0;
-    double startMouseY = 0;
-    
+    double startMouseX = 500;
+    double startMouseY = 500;
+
     // ===== MAIN DRAW LOOP
     while (!glfwWindowShouldClose(window)) {
         // Process Windows messages (specifically looking for WM_HOTKEY)
@@ -395,7 +417,7 @@ int main() {
         // interactive stuff
         if (showOverlay) {
             if (shouldShowGeminiKeyPrompt) {
-                guiHandler.drawAPIKeyPromptWindow(GEMINI_KEY, geminiClient, shouldShowGeminiKeyPrompt);
+                guiHandler.drawSettingsWindow(GEMINI_KEY, geminiClient, shouldShowGeminiKeyPrompt, superWindow);
             }
             else {
                 // gemini reponse selector

@@ -117,10 +117,11 @@ void drawFadedTextOverlay() {
 }
 
 
-void GuiHandler::drawAPIKeyPromptWindow(
+void GuiHandler::drawSettingsWindow(
     std::string& GEMINI_KEY, 
     GeminiClient& geminiClient,
-    bool& shouldShowGeminiKeyPrompt
+    bool& shouldShowGeminiKeyPrompt,
+    bool& superWindow
 ) {
     //ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
     ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
@@ -136,9 +137,12 @@ void GuiHandler::drawAPIKeyPromptWindow(
     // dummy for spacing
     // https://github.com/ocornut/imgui/issues/1487
     ImGui::Dummy(ImVec2(0.0f, 10.0f));
-    std::string biungus = "gungus;";
     ImGui::InputText("API Key", &GEMINI_KEY, ImGuiInputTextFlags_CharsNoBlank);
     ImGui::Spacing();
+
+    ImGui::Checkbox("Full Desktop Overlay", &superWindow);
+
+    ImGui::SetItemTooltip("Overlay will span across all monitors\ninstead of just opening in one");
 
     bool shouldntLetUserSave = GEMINI_KEY.empty() || GEMINI_KEY.length() < 20;
     ImGui::BeginDisabled(shouldntLetUserSave);
