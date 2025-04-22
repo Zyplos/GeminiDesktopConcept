@@ -148,6 +148,8 @@ void GuiHandler::drawSettingsWindow(
     ImGui::BeginDisabled(shouldntLetUserSave);
     if (ImGui::Button("Save") && !shouldntLetUserSave) {
         geminiClient = GeminiClient(GEMINI_KEY);
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        ImGui::SaveIniSettingsToDisk(io.IniFilename);
         shouldShowGeminiKeyPrompt = false;
     }
     ImGui::EndDisabled();
