@@ -1,4 +1,5 @@
 #include "gui.h"
+#include <iostream>
 
 void GuiHandler::setupStyles() {
     // ===== fonts and styling
@@ -121,10 +122,14 @@ void GuiHandler::drawSettingsWindow(
     std::string& GEMINI_KEY, 
     GeminiClient& geminiClient,
     bool& shouldShowGeminiKeyPrompt,
-    bool& superWindow
+    bool& superWindow,
+    std::function<void()> enableSuperWindow,
+    std::function<void()> setupOverlayInActiveMonitor,
+    std::function<void()> updateStartMouseCoords
 ) {
     //ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
-    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    std::cout << "drawSettingsWindow | x " << mouseOrigin.x << " y " << mouseOrigin.y << std::endl;
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Always);
     ImGui::Begin("api key window", NULL, geminiStatusWindowFlags);
 
     ImGui::PushFont(FontBodyBold);
@@ -150,6 +155,16 @@ void GuiHandler::drawSettingsWindow(
         geminiClient = GeminiClient(GEMINI_KEY);
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         ImGui::SaveIniSettingsToDisk(io.IniFilename);
+
+        if (superWindow) {
+            enableSuperWindow();
+        }
+        else {
+            setupOverlayInActiveMonitor();
+        }
+
+        updateStartMouseCoords();
+
         shouldShowGeminiKeyPrompt = false;
     }
     ImGui::EndDisabled();
@@ -159,7 +174,11 @@ void GuiHandler::drawSettingsWindow(
 
 void GuiHandler::drawClipboardWindow(std::string& clipboardText, bool& shouldShowGeminiKeyPrompt) {
     ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
-    ImGui::SetNextWindowPos(ImVec2(mouseOrigin.x, mouseOrigin.y - guiWindowHeight - guiWindowMargin), ImGuiCond_Appearing);
+    std::cout << "drawClipboardWindow | x " << mouseOrigin.x << " y " << mouseOrigin.y << std::endl;
+    std::cout << "drawClipboardWindow (adjusted) | x " << mouseOrigin.x << " y " << mouseOrigin.y - guiWindowHeight - guiWindowMargin << std::endl;
+    // this is set to ImGuiCond_Always since its position doesn't get updated if the user enables super window
+    // the edit options window looked like their position updated only cause we manually opened them (triggering ImGuiCond_Appearing)
+    ImGui::SetNextWindowPos(ImVec2(mouseOrigin.x, mouseOrigin.y - guiWindowHeight - guiWindowMargin), ImGuiCond_Always);
     ImGui::Begin("Clipboard", NULL, clipboardWindowFlags);
 
     // header
@@ -348,8 +367,9 @@ void GuiHandler::drawEditOptionsWindow(
     GeminiClient& geminiClient,
     std::function<void(GeminiClient::PromptType)> selectOptionEventHandler
 ) {
+    std::cout << "drawEditOptionsWindow | x " << mouseOrigin.x << " y " << mouseOrigin.y << std::endl;
     // options window
-    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Always);
     ImGui::Begin("edit options", NULL, clipboardWindowFlags);
 
     ImGui::PushFont(FontBodyBold);

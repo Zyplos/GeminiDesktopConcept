@@ -34,8 +34,8 @@
 
 GLFWwindow* window;
 
-GLint WIDTH = 1924;
-GLint HEIGHT = 1084;
+GLint WIDTH = 800;
+GLint HEIGHT = 800;
 int bufferWidth, bufferHeight;
 
 bool showOverlay = true;
@@ -44,6 +44,9 @@ bool superWindow = false;
 std::string clipboardText = "";
 GeminiClient geminiClient("");
 std::string GEMINI_KEY = "";
+
+double startMouseX = 500;
+double startMouseY = 500;
 
 // if imgui.ini doesnt exist then UserData_ReadLine doesnt fire
 // so show the key prompt by default. UserData_ReadLine will set this to false on launch
@@ -138,16 +141,21 @@ std::string getClipboardText() {
     return clipboardText;
 }
 
+void updateStartMouseCoords() {
+    glfwGetCursorPos(window, &startMouseX, &startMouseY);
+    std::cout << "UPDATEMOUSECOORDS | x " << startMouseX << " y " << startMouseY << std::endl;
+}
+
 // super window. spans all monitors
 // credit chatgpt for this snippet
-bool enableSuperWindow() {
+void enableSuperWindow() {
     int monitorCount;
     GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
 
     if (monitorCount == 0) {
         std::cerr << "No monitors found??\n";
         glfwTerminate();
-        return false;
+        exit(1);
     }
 
     int minX = INT_MAX;
@@ -175,6 +183,10 @@ bool enableSuperWindow() {
     WIDTH = maxX - minX;
     HEIGHT = maxY - minY;
 
+    // add a little bit to fix a bug where the screen turns all black
+    WIDTH += 4;
+    HEIGHT += 4;
+
     std::cout << "Super window size: (" << minX << ", " << minY << ") with size "
         << WIDTH << "x" << HEIGHT << "\n";
 
@@ -182,8 +194,105 @@ bool enableSuperWindow() {
     glfwSetWindowPos(window, minX, minY);
     glfwGetFramebufferSize(window, &bufferWidth, &bufferHeight);
     glViewport(0, 0, bufferWidth, bufferHeight);
+}
 
-    return true;
+// moves window to whatever windows deems the main monitor
+void setupPrimaryMonitor() {
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    if (!primaryMonitor) {
+        std::cout << "couldn't get primary monitor" << std::endl;
+        exit(1);
+    }
+
+    const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
+    int monitorX, monitorY;
+    glfwGetMonitorPos(primaryMonitor, &monitorX, &monitorY);
+
+    if (!mode) {
+        std::cout << "couldn't get required monitor properties" << std::endl;
+        exit(1);
+    }
+
+    WIDTH = mode->width;
+    HEIGHT = mode->height;
+
+    // add a little bit to fix a bug where the screen turns all black
+    WIDTH += 4;
+    HEIGHT += 4;
+
+    glfwSetWindowPos(window, monitorX, monitorY);
+    glfwSetWindowSize(window, WIDTH, HEIGHT);
+    glfwGetFramebufferSize(window, &bufferWidth, &bufferHeight);
+    glViewport(0, 0, bufferWidth, bufferHeight);
+}
+
+// enableSuperWindow() can fail but this has to succeed
+// this function will call exit() if it cant get any monitors
+void setupOverlayInActiveMonitor() {
+    // ===== get cursor position or use main monitor if it fails
+    POINT cursorPos;
+    if (!GetCursorPos(&cursorPos)) {
+        std::cerr << "!!! setupOverlayInActiveMonitor GetCursorPos failed" << std::endl;
+        setupPrimaryMonitor();
+        return;
+    }
+
+    // ===== grab available monitors
+    int monitorCount;
+    GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+    if (monitorCount == 0) {
+        std::cout << "couldn't get any kind of monitor???" << std::endl;
+        glfwTerminate();
+        exit(1);
+    }
+
+    // ===== loop through monitors to find active one
+    GLFWmonitor* targetMonitor = nullptr;
+    const GLFWvidmode* targetMode = nullptr;
+    int targetMonitorX = 0; 
+    int targetMonitorY = 0;
+    for (int i = 0; i < monitorCount; ++i) {
+        GLFWmonitor* currentMonitor = monitors[i];
+        int monitorX;
+        int monitorY;
+
+        glfwGetMonitorPos(currentMonitor, &monitorX, &monitorY);
+        const GLFWvidmode* mode = glfwGetVideoMode(currentMonitor);
+        if (!mode) {
+            // this might make it so no monitor is found but we catch that after this for loop
+            continue;
+        }
+
+        if (cursorPos.x >= monitorX && cursorPos.x < (monitorX + mode->width) &&
+            cursorPos.y >= monitorY && cursorPos.y < (monitorY + mode->height)) {
+            targetMonitor = currentMonitor;
+            targetMonitorX = monitorX;
+            targetMonitorY = monitorY;
+            targetMode = mode;
+            std::cout << "!!!!!!!!!! Cursor found on monitor " << i << ": " << glfwGetMonitorName(currentMonitor) << std::endl;
+            break;
+        }
+    }
+
+    if (!targetMonitor) {
+        setupPrimaryMonitor();
+        return;
+    }
+
+    std::cout << "!!! MONITOR CORNER x " << targetMonitorX << " y " << targetMonitorY
+        << " | dimensions " << targetMode->width << "x" << targetMode->height << std::endl;
+
+    WIDTH = targetMode->width;
+    HEIGHT = targetMode->height;
+
+    // add a little bit to fix a bug where the screen turns all black
+    WIDTH += 4;
+    HEIGHT += 4;
+
+    glfwSetWindowPos(window, targetMonitorX, targetMonitorY);
+    glfwSetWindowSize(window, WIDTH, HEIGHT);
+    glfwGetFramebufferSize(window, &bufferWidth, &bufferHeight);
+    glViewport(0, 0, bufferWidth, bufferHeight);
 }
 
 // api key settings
@@ -239,6 +348,26 @@ int main() {
         glfwTerminate();
         return 1;
     }
+
+    // set up 
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    if (!primaryMonitor) {
+        std::cout << "couldn't get primary monitor" << std::endl;
+        return 1;
+    }
+
+    const GLFWvidmode* monitorMode = glfwGetVideoMode(primaryMonitor);
+    if (!monitorMode) {
+        std::cout << "couldn't get monitor properties to get dimensions" << std::endl;
+        return -1;
+    }
+    
+    WIDTH = monitorMode->width;
+    HEIGHT = monitorMode->height;
+
+    // add a little bit to fix a bug where the screen turns all black
+    WIDTH += 4;
+    HEIGHT += 4;
 
     // setting up opengl window stuff
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -322,8 +451,7 @@ int main() {
     // Define range for random offset (large values ensure different parts of noise field)
     std::uniform_real_distribution<float> distrib(-1000.0f, 1000.0f);
 
-    double startMouseX = 500;
-    double startMouseY = 500;
+
 
     // ===== MAIN DRAW LOOP
     while (!glfwWindowShouldClose(window)) {
@@ -345,6 +473,12 @@ int main() {
 
                         // Just became visible: Start reveal animation
                         revealStartTime = (float)glfwGetTime();
+
+                        // move and resize window to active monitor
+                        // super window handled in settings functions
+                        if (!superWindow) {
+                            setupOverlayInActiveMonitor();
+                        }
 
                         // Get mouse pos in screen coordinates (pixels, top-left origin)
                         glfwGetCursorPos(window, &startMouseX, &startMouseY);
@@ -417,7 +551,15 @@ int main() {
         // interactive stuff
         if (showOverlay) {
             if (shouldShowGeminiKeyPrompt) {
-                guiHandler.drawSettingsWindow(GEMINI_KEY, geminiClient, shouldShowGeminiKeyPrompt, superWindow);
+                guiHandler.drawSettingsWindow(
+                    GEMINI_KEY,
+                    geminiClient,
+                    shouldShowGeminiKeyPrompt,
+                    superWindow,
+                    enableSuperWindow,
+                    setupOverlayInActiveMonitor,
+                    updateStartMouseCoords
+                );
             }
             else {
                 // gemini reponse selector

@@ -24,10 +24,13 @@ struct GuiHandler {
     // NOTE repetitively passing a bunch of the same stuff in these functions
     // probably make some AppState struct thing that holds this stuff if I ever expand on this project
     void drawSettingsWindow(
-        std::string& GEMINI_KEY, 
+        std::string& GEMINI_KEY,
         GeminiClient& geminiClient,
         bool& shouldShowGeminiKeyPrompt,
-        bool& superWindow
+        bool& superWindow,
+        std::function<void()> enableSuperWindow,
+        std::function<void()> setupOverlayInActiveMonitor,
+        std::function<void()> updateStartMouseCoords
     );
 
     void drawClipboardWindow(std::string& clipboardText, bool& shouldShowGeminiKeyPrompt);
