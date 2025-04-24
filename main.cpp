@@ -563,7 +563,7 @@ int main() {
         guiHandler.mouseOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
 
         // firstRun prompt to show keybind
-        if (shouldShowGeminiKeyPrompt && !showOverlay) {
+        if (!showOverlay && shouldShowGeminiKeyPrompt && GEMINI_KEY.empty()) {
             double followingMouseX = 0;
             double followingMouseY = 0;
             glfwGetCursorPos(window, &followingMouseX, &followingMouseY);
