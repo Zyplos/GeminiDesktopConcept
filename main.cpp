@@ -506,6 +506,11 @@ int main() {
                         // this function effectively only runs once in the loop
                         // so this should be fine...
                         clipboardText = getClipboardText();
+
+                        // sometimes the overlay gets put in the background
+                        // sometimes inputs stay on the window the user was on before calling the overlay
+                        // this should fix this
+                        glfwFocusWindow(window);
                     } else {
                         revealStartTime = -10.0f; // Or just leave it
                     }
