@@ -507,6 +507,12 @@ int main() {
                         // so this should be fine...
                         clipboardText = getClipboardText();
 
+                        // check if clipboardText only has whitespaces
+                        // https://stackoverflow.com/a/18240446
+                        if (std::all_of(clipboardText.begin(), clipboardText.end(), isspace)) {
+                            clipboardText = "";
+                        }
+
                         // sometimes the overlay gets put in the background
                         // sometimes inputs stay on the window the user was on before calling the overlay
                         // this should fix this
