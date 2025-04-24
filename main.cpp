@@ -38,7 +38,7 @@ GLint WIDTH = 800;
 GLint HEIGHT = 800;
 int bufferWidth, bufferHeight;
 
-bool showOverlay = true;
+bool showOverlay = false;
 bool superWindow = false;
 
 std::string clipboardText = "";
@@ -50,6 +50,7 @@ double startMouseY = 500;
 
 // if imgui.ini doesnt exist then UserData_ReadLine doesnt fire
 // so show the key prompt by default. UserData_ReadLine will set this to false on launch
+// this also acts as a firstRun variable
 bool shouldShowGeminiKeyPrompt = true;
 
 void selectOptionEventHandler(GeminiClient::PromptType type) {
@@ -541,6 +542,14 @@ int main() {
         ImGui::End();*/
 
         guiHandler.mouseOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
+
+        // firstRun prompt to show keybind
+        if (shouldShowGeminiKeyPrompt && !showOverlay) {
+            double followingMouseX = 0;
+            double followingMouseY = 0;
+            glfwGetCursorPos(window, &followingMouseX, &followingMouseY);
+            guiHandler.drawFirstRunPrompt(ImVec2(static_cast<float>(followingMouseX), static_cast<float>(followingMouseY)));
+        }
 
         // ===== MAIN GUI STUFF
         // prompt display window

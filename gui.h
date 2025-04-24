@@ -1,5 +1,7 @@
 #pragma once
 #include <string>
+#define IMGUI_DEFINE_MATH_OPERATORS // Access ImVec2 operators (+,-,*,/)
+#include <imgui_internal.h>       // Access ImLerp, ImDrawList, etc.
 #include <imgui.h>
 #include <imgui_stdlib.h>
 #include "geminiAPI.hpp"
@@ -18,6 +20,9 @@ struct GuiHandler {
     float guiWindowMargin = 10;
 
     ImVec2 mouseOrigin;
+
+    ImVec4 blueColor = ImVec4(0.41f, 0.56f, 1.0f, 1.0f);
+    ImVec4 redColor = ImVec4(1.0f, 0.41f, 0.47f, 1.0f);
 
     void setupStyles();
 
@@ -48,4 +53,6 @@ struct GuiHandler {
         GeminiClient& geminiClient,
         std::function<void(GeminiClient::PromptType)> selectOptionEventHandler
     );
+
+    void drawFirstRunPrompt(ImVec2 followingCoords);
 };

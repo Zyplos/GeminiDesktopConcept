@@ -83,6 +83,71 @@ void GuiHandler::setupStyles() {
     geminiStatusWindowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
 }
 
+// Helper function to draw text with a horizontal gradient
+// this was made by gemini. thanks!
+void TextGradient(const char* text, const ImVec4& color_start, const ImVec4& color_end)
+{
+    // Calculate text size to determine the bounding box
+    ImVec2 text_size = ImGui::CalcTextSize(text);
+    if (text_size.x <= 0.0f) {
+        // Draw nothing if text is empty or invalid
+        ImGui::Dummy(ImVec2(0.0f, ImGui::GetTextLineHeight())); // Maintain layout
+        return;
+    }
+
+    // Get the ImDrawList associated with the current window
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    // Using ImGui::Dummy first ensures the cursor position is correct for GetItemRectMin/Max.
+    ImGui::Dummy(text_size); // Reserve space and establish item rect
+
+    // Get the bounding box for the space *using the correct functions*
+    ImRect item_rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()); // <-- CORRECTED LINE
+
+    // Record the current vertex buffer size before adding the text
+    const int vtx_idx_start = draw_list->VtxBuffer.Size;
+
+    // Add the text to the draw list (position it within the reserved space)
+    draw_list->AddText(item_rect.Min, ImGui::GetColorU32(ImGuiCol_Text), text);
+
+    // Record the vertex buffer size after adding the text
+    const int vtx_idx_end = draw_list->VtxBuffer.Size;
+
+    // Now, iterate through the vertices that were just added for this text
+    // and modify their colors.
+    ImVec2 gradient_rect_min = item_rect.Min;
+    ImVec2 gradient_rect_max = item_rect.Max;
+    float gradient_width = gradient_rect_max.x - gradient_rect_min.x;
+
+    // Avoid division by zero if the text has no width
+    if (gradient_width <= 0.0f) {
+        // If width is zero or negative, just apply the start color uniformly
+        // to avoid division by zero and potential NaN issues.
+        // (Alternatively, could just return or apply a single color).
+        ImU32 col_start_u32 = ImGui::ColorConvertFloat4ToU32(color_start);
+        for (int i = vtx_idx_start; i < vtx_idx_end; ++i) {
+            draw_list->VtxBuffer[i].col = col_start_u32;
+        }
+        return; // Exit after applying uniform color
+    }
+
+    ImDrawVert* vert_start = draw_list->VtxBuffer.Data + vtx_idx_start;
+    ImDrawVert* vert_end = draw_list->VtxBuffer.Data + vtx_idx_end;
+
+    for (ImDrawVert* vert = vert_start; vert < vert_end; ++vert)
+    {
+        // Calculate the horizontal interpolation factor (0.0 to 1.0)
+        float t = (vert->pos.x - gradient_rect_min.x) / gradient_width;
+        t = ImClamp(t, 0.0f, 1.0f); // Ensure t stays within [0, 1]
+
+        // Linearly interpolate the color components
+        ImVec4 interpolated_color = ImLerp(color_start, color_end, t);
+
+        // Convert the ImVec4 color to ImU32 format used by ImDrawVert
+        vert->col = ImGui::ColorConvertFloat4ToU32(interpolated_color);
+    }
+}
+
 // fade text with transparent rectangle
 void drawFadedTextOverlay() {
     // https://github.com/ocornut/imgui/blob/master/docs/FAQ.md#q-how-can-i-display-custom-shapes-using-low-level-imdrawlist-api
@@ -227,7 +292,7 @@ void GuiHandler::drawAPIRunningState(GeminiClient& geminiClient) {
     ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
     ImGui::Begin("gemini loading", NULL, geminiStatusWindowFlags);
 
-    ImGui::Text("Generating suggestions...");
+    ImGui::Text("Getting suggestions...");
 
     ImGui::End();
 }
@@ -420,6 +485,22 @@ void GuiHandler::drawEditOptionsWindow(
     if (ImGui::Button("One word phrase")) { selectOptionEventHandler(GeminiClient::PromptType::ONEWORD); }
     if (ImGui::Button("Two word phrase")) { selectOptionEventHandler(GeminiClient::PromptType::TWOWORD); }
     ImGui::EndDisabled();
+
+    ImGui::End();
+}
+
+void GuiHandler::drawFirstRunPrompt(ImVec2 followingCoords) {
+    ImGui::SetNextWindowPos(ImVec2(followingCoords.x + 20, followingCoords.y - 25), ImGuiCond_Always);
+    ImGui::Begin("first run tutorial", NULL, geminiStatusWindowFlags);
+
+    ImGui::PushFont(FontDisplayRegular);
+
+    ImGui::Text("Press");
+    ImGui::SameLine();
+
+    TextGradient("ALT+Q", blueColor, redColor);
+   
+    ImGui::PopFont();
 
     ImGui::End();
 }
