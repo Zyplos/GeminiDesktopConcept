@@ -345,13 +345,13 @@ void UserData_WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTe
 
 
 
-//int WINAPI WinMain(
-//    _In_ HINSTANCE hInstance,
-//    _In_opt_ HINSTANCE hPrevInstance,
-//    _In_ LPSTR lpCmdLine,
-//    _In_ int nShowCmd
-//) {
-int main() {
+int WINAPI WinMain(
+    _In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPSTR lpCmdLine,
+    _In_ int nShowCmd
+) {
+//int main() {
     if (!glfwInit()) {
         std::cout << "GLFW failed\n";
         glfwTerminate();
@@ -491,6 +491,7 @@ int main() {
 
                         // Get mouse pos in screen coordinates (pixels, top-left origin)
                         glfwGetCursorPos(window, &startMouseX, &startMouseY);
+                        guiHandler.mouseOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
 
                         // Normalize to [0, 1] range (bottom-left origin for shader TexCoords)
                         revealMouseX = (float)(startMouseX / WIDTH);
@@ -527,8 +528,16 @@ int main() {
             DispatchMessage(&msg);
         }
 
-        // get and handle user input
-        glfwPollEvents();
+        if (showOverlay) {
+            // get and handle user input
+            // do this only when the overlay is open so the cpu doesn't do unnecessary work
+            glfwPollEvents();
+            glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
+        }
+        else {
+            // let mouse clicks pass through our window to the desktop
+            glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_TRUE);
+        }
 
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -540,12 +549,18 @@ int main() {
             );
         }
 
-        // imgui stuff
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        bool shouldShowFirstRunPrompt = !showOverlay && shouldShowGeminiKeyPrompt && GEMINI_KEY.empty();
 
-        ImGui::PushFont(guiHandler.FontBodyRegular);
+        // imgui stuff
+        // profiler shows imgui doing its frame stuff takes up a good chunk of cpu for a minute or two after startup
+        // so only do this if showing overlay or during the first run so the cpu isn't running high for that first minute
+        if (showOverlay || shouldShowFirstRunPrompt) {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            ImGui::PushFont(guiHandler.FontBodyRegular);
+        }
 
         /*ImGui::Begin("DEBUG");
         ImGui::Text("OVERLAY");
@@ -560,10 +575,9 @@ int main() {
         ImGui::TextWrapped(GEMINI_KEY.c_str());
         ImGui::End();*/
 
-        guiHandler.mouseOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
 
         // firstRun prompt to show keybind
-        if (!showOverlay && shouldShowGeminiKeyPrompt && GEMINI_KEY.empty()) {
+        if (shouldShowFirstRunPrompt) {
             double followingMouseX = 0;
             double followingMouseY = 0;
             glfwGetCursorPos(window, &followingMouseX, &followingMouseY);
@@ -571,7 +585,7 @@ int main() {
         }
 
         // ===== MAIN GUI STUFF
-        // prompt display window
+        // clipboard display window
         if (showOverlay) {
             guiHandler.drawClipboardWindow(clipboardText, shouldShowGeminiKeyPrompt);
         }
@@ -608,18 +622,14 @@ int main() {
                     guiHandler.drawEditOptionsWindow(geminiClient, selectOptionEventHandler);
                 }
             }
-
-            glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
-        }
-        else {
-            // let mouse clicks pass through our window to the desktop
-            glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_TRUE);
         }
 
-        ImGui::PopFont();
+        if (showOverlay || shouldShowFirstRunPrompt) {
+            ImGui::PopFont();
 
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
 
         // show frame
         glfwSwapBuffers(window);
