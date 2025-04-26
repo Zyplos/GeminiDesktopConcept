@@ -24,6 +24,7 @@
     <ProjectGuid>{47d88137-09f3-4116-b0b4-060d4623ab71}</ProjectGuid>
     <RootNamespace>GeminiDesktopConcept</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>LatentWriter</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
