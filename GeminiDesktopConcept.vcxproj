@@ -191,6 +191,13 @@
     <ClInclude Include="graphics.h" />
     <ClInclude Include="geminiAPI.hpp" />
     <ClInclude Include="gui.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="LatentWriter.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

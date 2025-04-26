@@ -8,6 +8,7 @@
 // windows messes with min/max, this fixes a warning
 #define NOMINMAX
 #include <Windows.h>
+#include "resource.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -430,6 +431,21 @@ int WINAPI WinMain(
     }
     else {
         std::cout << "Hotkey ALT+Q registered successfully.\n";
+    }
+
+    // load taskbar icon
+    HICON hIcon = static_cast<HICON>(LoadImage(
+        GetModuleHandle(NULL),
+        MAKEINTRESOURCE(IDI_ICON1), // <- make sure your icon ID matches here
+        IMAGE_ICON,
+        0, 0,
+        LR_DEFAULTSIZE | LR_SHARED
+    ));
+
+    // Set the icon for the window
+    if (hIcon) {
+        SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);    // Taskbar icon
+        SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);  // Title bar / Alt-Tab icon
     }
     
     // init imgui
