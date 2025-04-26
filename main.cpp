@@ -494,7 +494,6 @@ int WINAPI WinMain(
 
                         // Get mouse pos in screen coordinates (pixels, top-left origin)
                         glfwGetCursorPos(window, &startMouseX, &startMouseY);
-                        guiHandler.mouseOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
 
                         // Normalize to [0, 1] range (bottom-left origin for shader TexCoords)
                         revealMouseX = (float)(startMouseX / WIDTH);
@@ -536,6 +535,7 @@ int WINAPI WinMain(
             // do this only when the overlay is open so the cpu doesn't do unnecessary work
             glfwPollEvents();
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
+            guiHandler.mouseOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
         }
         else {
             // let mouse clicks pass through our window to the desktop
