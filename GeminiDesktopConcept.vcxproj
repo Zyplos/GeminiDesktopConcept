@@ -110,6 +110,12 @@
       <AdditionalLibraryDirectories>$(SolutionDir)\dependencies\glfw\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /E /I /Y "$(ProjectDir)fonts" "$(OutDir)fonts\"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>copy over fonts</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -148,6 +154,12 @@
       <AdditionalLibraryDirectories>$(SolutionDir)\dependencies\glfw\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /E /I /Y "$(ProjectDir)fonts" "$(OutDir)fonts\"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>copy over fonts</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dependencies\glad\src\glad.c" />

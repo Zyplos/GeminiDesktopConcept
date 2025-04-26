@@ -5,9 +5,9 @@ void GuiHandler::setupStyles() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.Fonts->AddFontDefault();
-    FontBodyRegular = io.Fonts->AddFontFromFileTTF("Outfit-Regular.ttf", 20.0f);
-    FontBodyBold = io.Fonts->AddFontFromFileTTF("Outfit-Bold.ttf", 20.0f);
-    FontDisplayRegular = io.Fonts->AddFontFromFileTTF("Outfit-Regular.ttf", 32.0f);
+    FontBodyRegular = io.Fonts->AddFontFromFileTTF("fonts\\Outfit-Regular.ttf", 20.0f);
+    FontBodyBold = io.Fonts->AddFontFromFileTTF("fonts\\Outfit-Bold.ttf", 20.0f);
+    FontDisplayRegular = io.Fonts->AddFontFromFileTTF("fonts\\Outfit-Regular.ttf", 32.0f);
 
 
 
