@@ -344,14 +344,17 @@ void UserData_WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTe
 
 
 
-
+#if defined(_DEBUG)
+int main()
+#else
 int WINAPI WinMain(
     _In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
     _In_ LPSTR lpCmdLine,
     _In_ int nShowCmd
-) {
-//int main() {
+)
+#endif
+{
     if (!glfwInit()) {
         std::cout << "GLFW failed\n";
         glfwTerminate();
