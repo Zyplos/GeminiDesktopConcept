@@ -35,10 +35,12 @@
 
 GLFWwindow* window;
 
+// window stuff
 GLint WIDTH = 800;
 GLint HEIGHT = 800;
 int bufferWidth, bufferHeight;
 
+// app state
 bool showOverlay = false;
 bool superWindow = false;
 
@@ -46,8 +48,13 @@ std::string clipboardText = "";
 GeminiClient geminiClient("");
 std::string GEMINI_KEY = "";
 
+// window positioning stuff
 double startMouseX = 500;
 double startMouseY = 500;
+
+ImVec2 overlayTopLeft = ImVec2(0, 0);
+ImVec2 overlaySize = ImVec2(0, 0);
+ImVec2 overlayCenter = ImVec2(0, 0);
 
 // if imgui.ini doesnt exist then UserData_ReadLine doesnt fire
 // so show the key prompt by default. UserData_ReadLine will set this to false on launch
@@ -182,6 +189,14 @@ void enableSuperWindow() {
         maxY = std::max(maxY, y + height);
     }
 
+    // use original values for window positioning stuff
+    overlayTopLeft = ImVec2(static_cast<float>(minX), static_cast<float>(minY));
+    overlaySize = ImVec2(static_cast<float>(maxX - minX), static_cast<float>(maxY - minY));
+    overlayCenter = ImVec2(
+        overlaySize.x * 0.5f,
+        overlaySize.y * 0.5f
+    );
+
     WIDTH = maxX - minX;
     HEIGHT = maxY - minY;
 
@@ -215,6 +230,14 @@ void setupPrimaryMonitor() {
         exit(1);
     }
 
+    // use original values for window positioning stuff
+    overlayTopLeft = ImVec2(static_cast<float>(monitorX), static_cast<float>(monitorY));
+    overlaySize = ImVec2(static_cast<float>(mode->width), static_cast<float>(mode->height));
+    overlayCenter = ImVec2(
+        overlaySize.x * 0.5f,
+        overlaySize.y * 0.5f
+    );
+
     WIDTH = mode->width;
     HEIGHT = mode->height;
 
@@ -228,8 +251,6 @@ void setupPrimaryMonitor() {
     glViewport(0, 0, bufferWidth, bufferHeight);
 }
 
-// enableSuperWindow() can fail but this has to succeed
-// this function will call exit() if it cant get any monitors
 void setupOverlayInActiveMonitor() {
     // ===== get cursor position or use main monitor if it fails
     POINT cursorPos;
@@ -283,6 +304,14 @@ void setupOverlayInActiveMonitor() {
 
     std::cout << "!!! MONITOR CORNER x " << targetMonitorX << " y " << targetMonitorY
         << " | dimensions " << targetMode->width << "x" << targetMode->height << std::endl;
+
+    // use original values for window positioning stuff
+    overlayTopLeft = ImVec2(static_cast<float>(targetMonitorX), static_cast<float>(targetMonitorY));
+    overlaySize = ImVec2(static_cast<float>(targetMode->width), static_cast<float>(targetMode->height));
+    overlayCenter = ImVec2(
+        overlaySize.x * 0.5f,
+        overlaySize.y * 0.5f
+    );
 
     WIDTH = targetMode->width;
     HEIGHT = targetMode->height;
@@ -374,7 +403,7 @@ int WINAPI WinMain(
         std::cout << "couldn't get monitor properties to get dimensions" << std::endl;
         return -1;
     }
-    
+
     WIDTH = monitorMode->width;
     HEIGHT = monitorMode->height;
 
@@ -479,7 +508,7 @@ int WINAPI WinMain(
     // Define range for random offset (large values ensure different parts of noise field)
     std::uniform_real_distribution<float> distrib(-1000.0f, 1000.0f);
 
-
+    std::cout << "BEGINNING MAIN DRAW LOOP" << std::endl;
 
     // ===== MAIN DRAW LOOP
     while (!glfwWindowShouldClose(window)) {
@@ -507,9 +536,20 @@ int WINAPI WinMain(
                         if (!superWindow) {
                             setupOverlayInActiveMonitor();
                         }
+                        //else {
+                        //    // run a version of setupOverlayInActiveMonitor that only sets pivots
+                        //    // so windows get positioned nicely still with superWindow on
+                        //    //setupOverlayProps();
+                        //}
+
+                        std::cout << "overlayTopLeft | x " << overlayTopLeft.x << " y " << overlayTopLeft.y << std::endl;
+                        std::cout << "overlaySize | x " << overlaySize.x << " y " << overlaySize.y << std::endl;
+                        std::cout << "overlayCenter | x " << overlayCenter.x << " y " << overlayCenter.y << std::endl;
 
                         // Get mouse pos in screen coordinates (pixels, top-left origin)
                         glfwGetCursorPos(window, &startMouseX, &startMouseY);
+
+                        std::cout << "mouseOrigin | x " << startMouseX << " y " << startMouseY << std::endl;
 
                         // Normalize to [0, 1] range (bottom-left origin for shader TexCoords)
                         revealMouseX = (float)(startMouseX / WIDTH);
@@ -551,7 +591,6 @@ int WINAPI WinMain(
             // do this only when the overlay is open so the cpu doesn't do unnecessary work
             glfwPollEvents();
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
-            guiHandler.mouseOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
         }
         else {
             // let mouse clicks pass through our window to the desktop
@@ -574,11 +613,42 @@ int WINAPI WinMain(
         // profiler shows imgui doing its frame stuff takes up a good chunk of cpu for a minute or two after startup
         // so only do this if showing overlay or during the first run so the cpu isn't running high for that first minute
         if (showOverlay || shouldShowFirstRunPrompt) {
+            // START NEW IMGUI FRAME
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
             ImGui::PushFont(guiHandler.FontBodyRegular);
+
+            // set window origins for guiHandler to user
+            // ===== MAIN MOUSE ORIGIN
+            guiHandler.mouseOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
+            guiHandler.clipboardOrigin = ImVec2(static_cast<float>(startMouseX), static_cast<float>(startMouseY));
+
+            // ===== calculate pivots and clipboard origin
+            bool isLeft = guiHandler.mouseOrigin.x < overlayCenter.x;
+            bool isTop = guiHandler.mouseOrigin.y < overlayCenter.y;
+
+            // If left, anchor left edge (0). If right, anchor right edge (1)
+            guiHandler.optionsPivot.x = isLeft ? 0.0f : 1.0f; 
+            // If top, anchor top edge (0). If bottom, anchor bottom edge (1)
+            guiHandler.optionsPivot.y = isTop ? 0.0f : 1.0f;  
+
+            guiHandler.clipboardPivot.x = guiHandler.optionsPivot.x;
+            // If options window is anchored at top (isTop is true), this naturally keeps clipboard above it.
+            // If options window is anchored at bottom (isTop is false), clipboard stays above cursor, options below.
+            if (isTop) {
+                // Cursor is near TOP edge: Anchor clipboard window's BOTTOM edge (pivot.y = 1.0)
+                // and position it BELOW the cursor.
+                guiHandler.clipboardPivot.y = 1.0f;
+                guiHandler.clipboardOrigin.y = guiHandler.mouseOrigin.y - guiHandler.guiWindowMargin;
+            }
+            else {
+                // Cursor is NOT near top edge: Anchor clipboard window's TOP edge (pivot.y = 0.0)
+                // and position it ABOVE the cursor.
+                guiHandler.clipboardPivot.y = 0.0f;
+                guiHandler.clipboardOrigin.y = guiHandler.mouseOrigin.y + guiHandler.guiWindowMargin;
+            }
         }
 
         /*ImGui::Begin("DEBUG");

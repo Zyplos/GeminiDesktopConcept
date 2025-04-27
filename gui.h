@@ -20,6 +20,9 @@ struct GuiHandler {
     float guiWindowMargin = 10;
 
     ImVec2 mouseOrigin;
+    ImVec2 clipboardOrigin;
+    ImVec2 clipboardPivot = ImVec2(1.0f, 1.0f);
+    ImVec2 optionsPivot = ImVec2(1.0f, 1.0f);
 
     ImVec4 blueColor = ImVec4(0.41f, 0.56f, 1.0f, 1.0f);
     ImVec4 redColor = ImVec4(1.0f, 0.41f, 0.47f, 1.0f);

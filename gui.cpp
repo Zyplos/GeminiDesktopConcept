@@ -192,7 +192,7 @@ void GuiHandler::drawSettingsWindow(
     std::function<void()> updateStartMouseCoords
 ) {
     //ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
-    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Always, optionsPivot);
     ImGui::Begin("api key window", NULL, geminiStatusWindowFlags);
 
     ImGui::PushFont(FontBodyBold);
@@ -237,9 +237,7 @@ void GuiHandler::drawSettingsWindow(
 
 void GuiHandler::drawClipboardWindow(std::string& clipboardText, bool& shouldShowGeminiKeyPrompt) {
     ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
-    // this is set to ImGuiCond_Always since its position doesn't get updated if the user enables super window
-    // the edit options window looked like their position updated only cause we manually opened them (triggering ImGuiCond_Appearing)
-    ImGui::SetNextWindowPos(ImVec2(mouseOrigin.x, mouseOrigin.y - guiWindowHeight - guiWindowMargin), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(clipboardOrigin, ImGuiCond_Always, clipboardPivot);
     ImGui::Begin("Clipboard", NULL, clipboardWindowFlags);
 
     // header
@@ -285,7 +283,7 @@ void GuiHandler::drawClipboardWindow(std::string& clipboardText, bool& shouldSho
 
 void GuiHandler::drawAPIRunningState(GeminiClient& geminiClient) {
     ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
-    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Always, optionsPivot);
     ImGui::Begin("gemini loading", NULL, geminiStatusWindowFlags);
 
     ImGui::Text("Getting suggestions...");
@@ -295,7 +293,7 @@ void GuiHandler::drawAPIRunningState(GeminiClient& geminiClient) {
 
 void GuiHandler::drawAPIFailedState(GeminiClient& geminiClient) {
     ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight));
-    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Always, optionsPivot);
     ImGui::Begin("gemini failed", NULL, geminiStatusWindowFlags);
 
     ImGui::PushFont(FontBodyBold);
@@ -323,7 +321,7 @@ void GuiHandler::drawAPIFinishedState(
     ImVec2 framePadding = style.FramePadding;
 
     ImGui::SetNextWindowSize(ImVec2(guiWindowWidth, guiWindowHeight * 2));
-    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Always, optionsPivot);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(1.0f, 1.0f));
     ImGui::Begin("gemini suggestions", NULL, selectionWindowFlags);
 
@@ -429,7 +427,7 @@ void GuiHandler::drawEditOptionsWindow(
     std::function<void(GeminiClient::PromptType)> selectOptionEventHandler
 ) {
     // options window
-    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(mouseOrigin, ImGuiCond_Always, optionsPivot);
     ImGui::Begin("edit options", NULL, clipboardWindowFlags);
 
     ImGui::PushFont(FontBodyBold);
