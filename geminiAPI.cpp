@@ -109,7 +109,7 @@ std::string GeminiClient::getPrompt(PromptType type) {
         return "Turn the following text snippet into a headline, like, for example, the title for a blog post or web page.";
         break;
     case PromptType::TAGLINE:
-        return "Rewrite the following text snipport into a tag line.";
+        return "Rewrite the following text snippet into a tag line.";
         break;
     case PromptType::ONEWORD:
         return "Rewrite the following text snippet into a one word phrase that encapsulates the same meaning.";
