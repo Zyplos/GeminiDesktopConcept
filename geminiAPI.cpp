@@ -22,7 +22,7 @@ bool GeminiClient::callAPI(std::string prompt, std::string clipboardText) {
     }
     state = State::RUNNING;
 
-    std::string promptWithText = prompt + "\n\n" + clipboardText;
+    std::string promptWithText = prompt + " Try your best to give me 10 suggestions. Here is the text:\n\n" + clipboardText;
 
     // FAILED quote test "this should fail" end text
     // FAILED slash test \this might fail\
@@ -90,10 +90,10 @@ std::string GeminiClient::getPrompt(PromptType type) {
         return "If the following text snippet is a single word or a two word phrase, give me 10 synonyms for it. Otherwise give me 10 ways to say something similar. If suggestions cannot be expressed in 10 words due to needing more context or other reasons, give a variety of suggestions that span multiple possible contexts.";
         break;
     case PromptType::REPHRASE:
-        return "Give me 10 other ways to rephrase the following text snippet:";
+        return "Give me 10 other ways to rephrase the following text snippet.";
         break;
     case PromptType::FORMALIZE:
-        return "Make the following text snippet more formal: ";
+        return "Make the following text snippet more formal.";
         break;
     case PromptType::ANTONYMS:
         return "If the following text snippet is a single word or a two word phrase, give me 10 antonyms for it. Otherwise give me 10 ways to say the opposite thing while still keeping the same intent. If suggestions cannot be expressed in 10 words due to needing more context or other reasons, give a variety of suggestions that span multiple possible contexts.";
@@ -102,20 +102,20 @@ std::string GeminiClient::getPrompt(PromptType type) {
         return "This snippet of text doesn't sound quite right, please rewrite it while keeping the same tone, intent, and meaning.";
         break;
     case PromptType::SHORTEN:
-        return "Make the following text snippet shorter:";
+        return "Make the following text snippet shorter.";
         break;
         // -----
     case PromptType::HEADLINE:
-        return "Turn the following text snippet into a headline, like, for example, the title for a blog post or web page:";
+        return "Turn the following text snippet into a headline, like, for example, the title for a blog post or web page.";
         break;
     case PromptType::TAGLINE:
-        return "Rewrite the following text snipport into a tag line:";
+        return "Rewrite the following text snipport into a tag line.";
         break;
     case PromptType::ONEWORD:
-        return "Rewrite the following text snippet into a one word phrase that encapsulates the same meaning:";
+        return "Rewrite the following text snippet into a one word phrase that encapsulates the same meaning.";
         break;
     case PromptType::TWOWORD:
-        return "Rewrite the following text snippet into two word phrase that encapsulates the same meaning:";
+        return "Rewrite the following text snippet into two word phrase that encapsulates the same meaning.";
         break;
     default:
         return "";
