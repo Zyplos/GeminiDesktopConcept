@@ -659,7 +659,9 @@ int WINAPI WinMain(
             glfwPollEvents();
         }
 
-        if (showOverlay && isMouseWithinImGuiPanelBounds()) {
+        bool isMouseOverImGuiWindow = isMouseWithinImGuiPanelBounds();
+
+        if (showOverlay && isMouseOverImGuiWindow) {
             // grab mouse clicks only if the overlay is open and imgui needs it
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
         }
@@ -671,22 +673,32 @@ int WINAPI WinMain(
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (showOverlay) {
-            double followingMouseX = 0;
-            double followingMouseY = 0;
-            glfwGetCursorPos(window, &followingMouseX, &followingMouseY);
+            if (!isMouseOverImGuiWindow) {
+                double followingMouseX = 0;
+                double followingMouseY = 0;
+                glfwGetCursorPos(window, &followingMouseX, &followingMouseY);
 
-            // normalize values for shader like in hotkey code above
-            float floatMouseX = (float)(followingMouseX / WIDTH);
-            float floatMouseY = 1.0f - (float)(followingMouseY / HEIGHT);
+                // normalize values for shader like in hotkey code above
+                float floatMouseX = (float)(followingMouseX / WIDTH);
+                float floatMouseY = 1.0f - (float)(followingMouseY / HEIGHT);
 
-            floatMouseX = std::max(0.0f, std::min(1.0f, floatMouseX));
-            floatMouseY = std::max(0.0f, std::min(1.0f, floatMouseY));
+                floatMouseX = std::max(0.0f, std::min(1.0f, floatMouseX));
+                floatMouseY = std::max(0.0f, std::min(1.0f, floatMouseY));
 
-            drawGraphics(
-                simplexOffsetX, simplexOffsetY,
-                revealStartTime, revealMouseX, revealMouseY,
-                floatMouseX, floatMouseY
-            );
+                drawGraphics(
+                    simplexOffsetX, simplexOffsetY,
+                    revealStartTime, revealMouseX, revealMouseY,
+                    floatMouseX, floatMouseY
+                );
+            }
+            else {
+                drawGraphics(
+                    simplexOffsetX, simplexOffsetY,
+                    revealStartTime, revealMouseX, revealMouseY,
+                    0, 0
+                );
+            }
+            
         }
 
         bool shouldShowFirstRunPrompt = !showOverlay && shouldShowGeminiKeyPrompt && GEMINI_KEY.empty();
