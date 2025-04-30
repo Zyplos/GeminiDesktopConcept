@@ -671,9 +671,21 @@ int WINAPI WinMain(
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (showOverlay) {
+            double followingMouseX = 0;
+            double followingMouseY = 0;
+            glfwGetCursorPos(window, &followingMouseX, &followingMouseY);
+
+            // normalize values for shader like in hotkey code above
+            float floatMouseX = (float)(followingMouseX / WIDTH);
+            float floatMouseY = 1.0f - (float)(followingMouseY / HEIGHT);
+
+            floatMouseX = std::max(0.0f, std::min(1.0f, floatMouseX));
+            floatMouseY = std::max(0.0f, std::min(1.0f, floatMouseY));
+
             drawGraphics(
                 simplexOffsetX, simplexOffsetY,
-                revealStartTime, revealMouseX, revealMouseY
+                revealStartTime, revealMouseX, revealMouseY,
+                floatMouseX, floatMouseY
             );
         }
 

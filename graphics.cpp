@@ -38,6 +38,11 @@ const char* fragmentShaderSource = R"(
     uniform float u_revealStartTime; // Time the current reveal started
     uniform vec2 u_revealCenter;     // Mouse position at reveal start [0, 1]
     const float u_revealDuration = 3.0;  // Duration of the reveal effect (e.g., 3.0s)
+
+    // ===== Cursor area transparency effect
+    uniform vec2 u_currentMousePos;
+    const float u_cursorFadeRadius = 0.01;   // Radius of full transparency around cursor
+    const float u_cursorFadeSoftness = 0.12; // Width of the fade gradient
     
     // ===== Simplex moise functions
     vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -158,10 +163,15 @@ const char* fragmentShaderSource = R"(
             vec3 bloomColor = vec3(1.8, 1.8, 2.0);
             bloomEffect = bloomColor * bloomAmount * revealAlpha;
         }
-    
+
+        // ===== calculating cursor area transparancy effect
+        float cursorDist = distance(TexCoords, u_currentMousePos);
+        // smoothstep goes from 0 to 1 as cursorDist goes from radius to radius+softness
+        float cursorFadeAlpha = smoothstep(u_cursorFadeRadius, u_cursorFadeRadius + u_cursorFadeSoftness, cursorDist);
+
         // ===== Actual final color by mixing the base final color with the reveal bloom effect
         vec3 finalColor = baseFinalColor + bloomEffect; // Add bloom to base color
-        float finalAlpha = baseMaskAlphaValue * revealAlpha; // Combine simplex alpha and reveal alpha
+        float finalAlpha = baseMaskAlphaValue * revealAlpha * cursorFadeAlpha; // Combine simplex alpha and reveal alpha
     
         FragColor = vec4(finalColor, finalAlpha);
     }
@@ -173,6 +183,7 @@ GLint timeLocation;
 GLint simplexOffsetLocation;
 GLint revealStartTimeLocation;
 GLint revealCenterLocation;
+GLint currentMousePosLocation;
 
 void loadGraphics() {
     // Create Vertex Shader Object and get its reference
@@ -277,18 +288,25 @@ void loadGraphics() {
     simplexOffsetLocation = glGetUniformLocation(shaderProgram, "u_simplexOffset");
     revealStartTimeLocation = glGetUniformLocation(shaderProgram, "u_revealStartTime");
     revealCenterLocation = glGetUniformLocation(shaderProgram, "u_revealCenter");
+    currentMousePosLocation = glGetUniformLocation(shaderProgram, "u_currentMousePos");
 
     // Check reveal uniforms
-    if (timeLocation == -1 || simplexOffsetLocation == -1 || revealStartTimeLocation == -1 ||
-        revealCenterLocation == -1) {
+    if (
+        timeLocation == -1 || 
+        simplexOffsetLocation == -1 || 
+        revealStartTimeLocation == -1 ||
+        revealCenterLocation == -1 || 
+        currentMousePosLocation == -1
+        ) {
         std::cerr << "Warning: One or more uniforms not found in shader!" << std::endl;
     }
 }
 
-// Modify drawGraphics signature to accept reveal parameters <-- MODIFIED SIGNATURE
+// Modify drawGraphics signature to accept reveal parameters
 void drawGraphics(
     float simplexOffsetX, float simplexOffsetY,
-    float revealStartTime, float revealMouseX, float revealMouseY
+    float revealStartTime, float revealMouseX, float revealMouseY,
+    float currentMouseX, float currentMouseY
 ) {
     glUseProgram(shaderProgram);
 
@@ -298,6 +316,7 @@ void drawGraphics(
     glUniform2f(simplexOffsetLocation, simplexOffsetX, simplexOffsetY);
     glUniform1f(revealStartTimeLocation, revealStartTime);
     glUniform2f(revealCenterLocation, revealMouseX, revealMouseY);
+    glUniform2f(currentMousePosLocation, currentMouseX, currentMouseY);
 
     // Bind the VAO so OpenGL knows to use it
     glBindVertexArray(VAO);

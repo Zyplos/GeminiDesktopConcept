@@ -9,7 +9,8 @@ void loadGraphics();
 
 void drawGraphics(
     float simplexOffsetX, float simplexOffsetY,
-    float revealStartTime, float revealMouseX, float revealMouseY
+    float revealStartTime, float revealMouseX, float revealMouseY,
+    float currentMouseX, float currentMouseY
 );
 
 void destroyGraphics();
