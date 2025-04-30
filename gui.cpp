@@ -253,6 +253,10 @@ void GuiHandler::drawClipboardWindow(std::string& clipboardText, bool& shouldSho
         ImGui::TextDisabled("%zu characters", clipboardLength);
     }
 
+    // hotkey reminder
+    ImGui::SameLine();
+    ImGui::TextDisabled("(ALT+Q to close)");
+
     // settings button
     ImGui::SameLine();
     ImVec2 buttonSize = ImVec2(80.0f, 0);
@@ -268,7 +272,7 @@ void GuiHandler::drawClipboardWindow(std::string& clipboardText, bool& shouldSho
         ImGui::TextDisabled("No text in your clipboard.");
 
         ImGui::PushFont(FontBodyRegular);
-        ImGui::TextDisabled("Copying text to your clipboard will make it available here.");
+        ImGui::TextDisabled("Copy some text for Latent Writer to make suggestions.");
         ImGui::PopFont();
     }
     else {

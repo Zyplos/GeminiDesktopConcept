@@ -89,8 +89,8 @@ void handleSuggestionClick(std::string suggestion) {
 
     ImGui::SetClipboardText(suggestion.c_str());
 
-    // clipboardText doesn't automatically update so we'll set it here
-    clipboardText = suggestion;
+    //// clipboardText doesn't automatically update so we'll set it here
+    //clipboardText = suggestion;
 
     showOverlay = false;
 }
@@ -153,6 +153,46 @@ std::string getClipboardText() {
 void updateStartMouseCoords() {
     glfwGetCursorPos(window, &startMouseX, &startMouseY);
     std::cout << "UPDATEMOUSECOORDS | x " << startMouseX << " y " << startMouseY << std::endl;
+}
+
+// both io.WantsMouseCapture and ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow wouldn't
+// since it depends on the window being focused, which our program at times isn't
+// so we'll have to manually check
+bool isMouseWithinImGuiPanelBounds() {
+    ImGuiContext* g = ImGui::GetCurrentContext();
+    if (!g) return false;
+
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+    ImVec2 imguiCoords = ImVec2(static_cast<float>(mouseX), static_cast<float>(mouseY));
+
+    for (ImGuiWindow* window : g->Windows) {
+        // Skip inactive or hidden windows
+        if (!window->WasActive || window->Hidden) {
+            continue;
+        }
+
+        // Check if it's a root window (not a child window contained within another)
+        // or adjust if you *want* to capture clicks on child windows specifically.
+        // Also check if the window wants inputs.
+        bool isRootAndWantInputs = !(window->Flags & ImGuiWindowFlags_ChildWindow) &&
+            !(window->Flags & ImGuiWindowFlags_NoMouseInputs);
+
+        if (isRootAndWantInputs && window->Rect().Contains(imguiCoords)) {
+            // Check if the mouse is within the *clipping rectangle* as well,
+            // to handle cases where parts of the window are scrolled out of view
+            // or clipped by parent windows (though we filter for root windows here).
+            //if (window->ClipRect.Contains(imguiCoords)) {
+            //    // Mouse is over this ImGui window!
+            //    return true;
+            //}
+
+            return true;
+        }
+    }
+
+    // Mouse is not over any relevant ImGui window
+    return false;
 }
 
 // super window. spans all monitors
@@ -456,10 +496,19 @@ int WINAPI WinMain(
     // Register ALT + Q as a hotkey
     if (!RegisterHotKey(hwnd, MY_HOTKEY_ID, MOD_ALT, 0x51)) {
         std::cerr << "Failed to register hotkey. Error code: " << GetLastError() << std::endl;
-        // You might want to handle this more gracefully, maybe exit or inform the user.
+        exit(1);
     }
     else {
         std::cout << "Hotkey ALT+Q registered successfully.\n";
+    }
+
+    // listen to clipboard changes, parsed in PeekMessage below
+    if (!AddClipboardFormatListener(hwnd)) {
+        std::cerr << "Failed to register clipboard listener. Error code: " << GetLastError() << std::endl;
+        exit(1);
+    }
+    else {
+        std::cout << "Clipboard listener registered successfully.\n";
     }
 
     // load taskbar icon
@@ -510,6 +559,13 @@ int WINAPI WinMain(
 
     std::cout << "BEGINNING MAIN DRAW LOOP" << std::endl;
 
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // handleSuggestionClick() sets showOverlay to false
+    // so when ImGui::EndFrame() gets called use this instead of showOverlay like NewFrame does
+    // NewFrame will set it to true
+    bool shouldEndImguiFrame = false;
+
     // ===== MAIN DRAW LOOP
     while (!glfwWindowShouldClose(window)) {
         // Process Windows messages (specifically looking for WM_HOTKEY)
@@ -524,6 +580,14 @@ int WINAPI WinMain(
                     showOverlay = !showOverlay; // Toggle visibility
 
                     if (showOverlay) {
+                        // sometimes the overlay gets put in the background
+                        // sometimes inputs stay on the window the user was on before calling the overlay
+                        // this should fix this
+                        // THIS GETS DONE FIRST BEFORE ANYTHING ELSE 
+                        // that way window coords get recalculated correctly and everything shows up
+                        glfwRestoreWindow(window);
+                        glfwFocusWindow(window);
+
                         simplexOffsetX = distrib(gen); // Generate random X offset
                         simplexOffsetY = distrib(gen); // Generate random Y offset
                         std::cout << "New simplex offset: (" << simplexOffsetX << ", " << simplexOffsetY << ")\n"; // Optional debug log
@@ -571,14 +635,17 @@ int WINAPI WinMain(
                         if (std::all_of(clipboardText.begin(), clipboardText.end(), isspace)) {
                             clipboardText = "";
                         }
-
-                        // sometimes the overlay gets put in the background
-                        // sometimes inputs stay on the window the user was on before calling the overlay
-                        // this should fix this
-                        glfwFocusWindow(window);
                     } else {
                         revealStartTime = -10.0f; // Or just leave it
                     }
+                }
+            }
+            else if (msg.message == WM_CLIPBOARDUPDATE) {
+                std::cout << "Clipboard update detected!\n";
+                // Only update the text if the overlay is currently visible
+                if (showOverlay) {
+                    std::cout << "Updating clipboardText, overlay open\n";
+                    clipboardText = getClipboardText();
                 }
             }
             // Important: Translate and dispatch other messages for general Windows functionality
@@ -590,10 +657,13 @@ int WINAPI WinMain(
             // get and handle user input
             // do this only when the overlay is open so the cpu doesn't do unnecessary work
             glfwPollEvents();
+        }
+
+        if (showOverlay && isMouseWithinImGuiPanelBounds()) {
+            // grab mouse clicks only if the overlay is open and imgui needs it
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_FALSE);
         }
         else {
-            // let mouse clicks pass through our window to the desktop
             glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, GL_TRUE);
         }
 
@@ -617,6 +687,7 @@ int WINAPI WinMain(
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
+            shouldEndImguiFrame = true;
 
             ImGui::PushFont(guiHandler.FontBodyRegular);
 
@@ -662,8 +733,33 @@ int WINAPI WinMain(
         ImGui::TextWrapped(geminiClient.errorFeedback.c_str());
         ImGui::Text("GEMINI_KEY");
         ImGui::TextWrapped(GEMINI_KEY.c_str());
-        ImGui::End();*/
+        ImGui::Text("WANTSMOUSE");
+        ImGui::TextWrapped("%d", io.WantCaptureMouse);
 
+        double debugMouseX = 0;
+        double debugMouseY = 0;
+        glfwGetCursorPos(window, &debugMouseX, &debugMouseY);
+
+        ImGui::Text("MOUSECORDS");
+        ImGui::TextWrapped("x %f | y %f", debugMouseX, debugMouseY);
+
+        ImGui::Text("IsWindowHovered AnyWindow");
+        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+            ImGui::Text("yup");
+        }
+        else {
+            ImGui::Text("nop");
+        }
+        
+        ImGui::Text("isMouseWithinImGuiPanelBounds");
+        if (isMouseWithinImGuiPanelBounds()) {
+            ImGui::Text("yup");
+        }
+        else {
+            ImGui::Text("nop");
+        }
+
+        ImGui::End();*/
 
         // firstRun prompt to show keybind
         if (shouldShowFirstRunPrompt) {
@@ -677,6 +773,8 @@ int WINAPI WinMain(
         // clipboard display window
         if (showOverlay) {
             guiHandler.drawClipboardWindow(clipboardText, shouldShowGeminiKeyPrompt);
+            //clipboardText = ImGui::GetClipboardText();
+            //guiHandler.drawClipboardWindow(clipboardText, shouldShowGeminiKeyPrompt);
         }
 
         // interactive stuff
@@ -713,11 +811,13 @@ int WINAPI WinMain(
             }
         }
 
-        if (showOverlay || shouldShowFirstRunPrompt) {
+        if (shouldEndImguiFrame) {
             ImGui::PopFont();
 
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            // reset flag
+            shouldEndImguiFrame = false;
         }
 
         // show frame
@@ -727,6 +827,9 @@ int WINAPI WinMain(
     // cleanup
     UnregisterHotKey(hwnd, MY_HOTKEY_ID);
     std::cout << "Hotkey unregistered.\n";
+
+    RemoveClipboardFormatListener(hwnd);
+    std::cout << "Clipboard listener unregistered.\n";
 
     destroyGraphics();
 
