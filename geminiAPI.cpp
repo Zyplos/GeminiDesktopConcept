@@ -57,6 +57,7 @@ void GeminiClient::processResponse(cpr::Response response) {
     if (response.status_code != 200) {
         state = State::FAILED;
         errorFeedback = "There was an error trying to get suggestions from Gemini. (HTTP " + std::to_string(response.status_code) + ")";
+        errorFeedback += "\n(CPR[" + std::to_string(static_cast<int>(response.error.code)) + "] " + response.error.message + ")";
 
         try {
             json jsonData = json::parse(response.text);

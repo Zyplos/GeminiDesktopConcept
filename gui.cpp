@@ -214,6 +214,7 @@ void GuiHandler::drawSettingsWindow(
 
     bool shouldntLetUserSave = GEMINI_KEY.empty() || GEMINI_KEY.length() < 20;
     ImGui::BeginDisabled(shouldntLetUserSave);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
     if (ImGui::Button("Save") && !shouldntLetUserSave) {
         geminiClient = GeminiClient(GEMINI_KEY);
         ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -231,6 +232,7 @@ void GuiHandler::drawSettingsWindow(
         shouldShowGeminiKeyPrompt = false;
     }
     ImGui::EndDisabled();
+    ImGui::PopStyleVar();
 
     ImGui::Dummy(ImVec2(0.0f, 20.0f));
     ImGui::TextLinkOpenURL("Latent Writer v1.0", "https://github.com/Zyplos/LatentWriter");
