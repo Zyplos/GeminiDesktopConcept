@@ -695,7 +695,7 @@ int WINAPI WinMain(
                 drawGraphics(
                     simplexOffsetX, simplexOffsetY,
                     revealStartTime, revealMouseX, revealMouseY,
-                    0, 0
+                    -100, -100
                 );
             }
             
