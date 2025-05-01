@@ -8,8 +8,6 @@ Quickly make text snippets more formal, get synonyms, generate taglines, and mor
 
 This project uses [ocornut/imgui](https://github.com/ocornut/imgui) to create the interface. [glfw](glfw/glfw) and [Dav1dde/glad](https://github.com/Dav1dde/glad) for OpenGL stuff. [cpr](https://github.com/libcpr/cpr) to make http requests and [nlohmann/json](https://github.com/nlohmann/json) to parse them. Additional credits to Gemini 2.5 Pro Preview 03-25 for some contributions and general help.
 
-![screenshot](./img-screenshot.png)
-
 ## Setup
 
 Go to the [latest release page](https://github.com/Zyplos/LatentWriter/releases/latest) and look for a **LatentWriter-vX.X-x64.zip** under assets. Download the zip and extract it somewhere you want to keep this program.
@@ -17,6 +15,8 @@ Go to the [latest release page](https://github.com/Zyplos/LatentWriter/releases/
 You'll need an API Key from Google AI Studio to use this application. You can grab one here: https://aistudio.google.com/app/apikey
 
 Copy the key and launch **LatentWriter.exe**. Hit **ALT+Q**, paste the API key where required, and save settings. Enjoy! Next time you're writing and need some quick suggestions, copy the relevant text snippet and open the overlay to quickly ask Gemini for some suggestions.
+
+![screenshot](./img-screenshot.png)
 
 ## Project Setup
 
