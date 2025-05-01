@@ -232,6 +232,9 @@ void GuiHandler::drawSettingsWindow(
     }
     ImGui::EndDisabled();
 
+    ImGui::Dummy(ImVec2(0.0f, 20.0f));
+    ImGui::TextLinkOpenURL("Latent Writer v1.0", "https://github.com/Zyplos/LatentWriter");
+
     ImGui::End();
 }
 
