@@ -1,6 +1,6 @@
 # Latent Writer
 
-[header image]
+![header image](./img-header.png)
 
 A small Windows application meant to help you while you write. Think of it as a "power thesaurus." Summon an overlay which uses your clipboard to generate text suggestions. Uses **Gemini 2.0 Flash** to generate suggestions.
 
@@ -8,7 +8,7 @@ Quickly make text snippets more formal, get synonyms, generate taglines, and mor
 
 This project uses [ocornut/imgui](https://github.com/ocornut/imgui) to create the interface. [glfw](glfw/glfw) and [Dav1dde/glad](https://github.com/Dav1dde/glad) for OpenGL stuff. [cpr](https://github.com/libcpr/cpr) to make http requests and [nlohmann/json](https://github.com/nlohmann/json) to parse them. Additional credits to Gemini 2.5 Pro Preview 03-25 for some contributions and general help.
 
-[screenshot]
+![screenshot](./img-screenshot.png)
 
 ## Setup
 
