@@ -43,3 +43,5 @@ I would've liked to add bloom and other stuff to the shader. `graphics.cpp` woul
 ## Design Notes
 
 You can find some extra notes here if you're wondering about the considerations that went into making Latent Writer: https://github.com/Zyplos/LatentWriter/blob/main/DESIGN.md
+
+I also wrote something that is tangentially connected to this project. You can read it here: https://zyplos.dev/ai
