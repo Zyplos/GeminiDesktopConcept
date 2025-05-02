@@ -6,7 +6,7 @@ A small Windows application meant to help you while you write. Think of it as a 
 
 Quickly make text snippets more formal, get synonyms, generate taglines, and more.
 
-This project uses [ocornut/imgui](https://github.com/ocornut/imgui) to create the interface. [glfw](glfw/glfw) and [Dav1dde/glad](https://github.com/Dav1dde/glad) for OpenGL stuff. [cpr](https://github.com/libcpr/cpr) to make http requests and [nlohmann/json](https://github.com/nlohmann/json) to parse them. Additional credits to Gemini 2.5 Pro Preview 03-25 for some contributions and general help.
+This project uses [ocornut/imgui](https://github.com/ocornut/imgui) to create the interface. [glfw](glfw/glfw) and [Dav1dde/glad](https://github.com/Dav1dde/glad) for OpenGL stuff. [cpr](https://github.com/libcpr/cpr) to make http requests and [nlohmann/json](https://github.com/nlohmann/json) to parse them. Outfit font designed by Smartsheet Inc, Rodrigo Fuenzalida. Additional credits to Gemini 2.5 Pro Preview 03-25 for some contributions and general help.
 
 ## Setup
 
