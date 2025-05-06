@@ -16,7 +16,7 @@ You'll need an API Key from Google AI Studio to use this application. You can gr
 
 Copy the key and launch **LatentWriter.exe**. Hit **ALT+Q**, paste the API key where required, and save settings. Enjoy! Next time you're writing and need some quick suggestions, copy the relevant text snippet and open the overlay to quickly ask Gemini for some suggestions.
 
-![screenshot](./img-screenshot.png)
+https://github.com/user-attachments/assets/b72f672c-42a3-4047-b7e4-a2191a748139
 
 ## Project Setup
 
