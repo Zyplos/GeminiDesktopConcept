@@ -14,6 +14,8 @@ This project was made for one particular **target audience**: me. Even so, its d
 
 Latent Writer was a team effort between Gemini 2.5 Pro Preview 03-25 and I (related post: "[how i use ai](https://zyplos.dev/ai)" talking about this team effort and how I use Latent Writer myself).
 
+https://github.com/user-attachments/assets/b72f672c-42a3-4047-b7e4-a2191a748139
+
 ## Process & Methodology
 
 ### Feature set
