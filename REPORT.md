@@ -1,12 +1,12 @@
 # Project Notes
 
-This project was originally called "GeminiDesktopConcept" was meant to be a UI mockup with the goal of seeing what Gemini could look like if it was integrated into a desktop environment and always ready to use. As I thought about the project more and more, I decided I wanted this to be a real application I could use instead of a simple mockup. With this being AI related, I decided to see how I could streamline one of my biggest use cases for AI: getting writing feedback and suggestions.
+This project was originally called "GeminiDesktopConcept" and was meant to be a UI mockup with the goal of seeing what Gemini could look like if it was integrated into a desktop environment and always ready to use. As I thought about the project more and more, I decided I wanted this to be a real application I could use instead of a simple mockup. With this being AI related, I decided to see how I could streamline one of my biggest use cases for AI: getting writing feedback and suggestions.
 
 Here's some of the thinking behind this project.
 
 ## Intro
 
-This project became **Latent Writer**, a writing assistance application that takes the form of an always accessible overlay on top your desktop. 
+This is **Latent Writer**, a writing assistance application that takes the form of an always accessible overlay on top your desktop. 
 
 **The goal** was to have an AI assistant that could take text snippets and give you writing suggestions (synonyms, formalizing text, shortening text, etc) without having a dedicated chat box UI and a clutter of chat histories. These suggestions are meant to be quick, one off queries that you can get in the moment you want them so you don't interrupt your writing flow.
 
@@ -19,11 +19,13 @@ https://github.com/user-attachments/assets/b72f672c-42a3-4047-b7e4-a2191a748139
 ## Process & Methodology
 
 ### Feature set
-Getting AI suggestions for writing can easily be done on any AI's website with a chat box. Before this project, I would do that, but I always liked to make a new chat so the AI wouldn't use previous text snippets as context for new suggestions I wanted. Annoyingly, that meant I would have a ton of useless chat histories on the sidebar. OpenAI has a temporary chat option, but having to open the site again and again whenever I thought to get suggestions was annoying as well.
+Getting AI suggestions for writing can easily be done on any AI assistant's website with a chat box. Before this project, I would do that, but I always like to make a new chat so the AI wouldn't use previous text snippets as context for new suggestions I wanted. Annoyingly, that meant I would have a ton of useless chat histories on the sidebar. OpenAI has a temporary chat option, but having to open the site again and again whenever I thought to get suggestions was annoying as well. Having to retype the general prompt I used to get suggestions was tedious and ChatGPT's custom instructions wasn't particularly enough for what I wanted.
 
 Latent Writer addresses these issues by running in the background while you're writing so its easy to summon. The overlay is summoned only though a keystroke, since its meant to be easy to get at right in the moment you want it, which is likely when you're writing so you're already focused on your keyboard. **ALT+Q** was specifically chosen as the keyboard shortcut as it seemed like an easy keystroke to input (such as Discord's CTRL+BACKTICK or Steam's SHIFT+TAB) and I couldn't think of any program that would conflict with this keystroke. 
 
-Latent Writer uses your clipboard to see what text you want suggestions for and includes options for some of the things I most often ask AI about: helping me rephrase things, shorten long sentences, or generally helping me when I know a sentence doesn't sound right. As a nice bonus, the suggestions are shown as a list that you can select, copying the suggestion to your clipboard if you see one that does the job.
+Latent Writer uses your clipboard to see what text you want suggestions for and includes options for some of the things I most often ask AI about: helping me rephrase things, shorten long sentences, or generally helping me when I know a sentence doesn't sound right. Each edit option in the list is its own specific prompt which makes for better suggestions than a general one.
+
+As a nice bonus, the suggestions are shown as a list that you can select which copies that suggestion to your clipboard.
 
 ![a list of all the options available](./img-edit-options.png)
 
@@ -37,20 +39,20 @@ With Gemini's help, I strung together some of the stuff I've learned about over 
 ### Interface
 The general vibe takes inspiration from The Browser Company's [Dia concept video](https://x.com/joshm/status/1863580629465788823). I wanted the interface to look like a natural extension of your computer while also looking like something new and shiny. The program being an overlay encompasses this idea. Its part of your computer by always being there, but is also its own thing by drawing itself on top of the desktop and having its own distinct style from what native UI elements usually look like on Windows.
 
-One of the main things you'll be looking at is the "Edit Options" panel. I meant for it to look like a context menu. Modernized but not chunky like the Windows 11 context menu. This hits that familiarity while also laying out all the options nicely.
+One of the main things you'll be looking at is the "Edit Options" panel. I meant for it to look like a context menu. Modernized but not chunky like the Windows 11 context menu. This encompasses that familiarity while also laying out all the options nicely.
 
 I referenced the Gemini website for colors I could use. I used a muted gray for text that serves as more of a hint. The scrollbar in the suggestions panel uses a light blue since it stands out from the rest of the gray interface.
 
-The clipboard panel changes depending on many characters are in your clipboard. If the clipboard content overflows the panel, the panel won't scroll. I figure you'd be aware of exactly what's in it if you're copying what you need and then opening the overlay. The program is also meant for small text snippets, so overflowing the panel isn't meant to happen very often. Instead, if it does happen, you'll see the last row of text fade out to let you know you have a lot in your clipboard. You'll also see a character count appear just as an extra helpful thing.
+The clipboard panel changes depending on how many characters are in your clipboard. If the clipboard content overflows the panel, the panel won't scroll. I figure you'd be aware of exactly what's in it if you're copying what you need for the purpose of using the overlay. The program is meant for small text snippets, so overflowing the panel isn't meant to happen very often. Instead, if it does happen, you'll see the last row of text fade out to let you know you have a lot in your clipboard. You'll also see a character count appear just as an extra helpful thing.
 
 ![the clipboard overflowing with text](./img-clipboard.png)
 
 ### First Run
-When you first open Latent Writer, you'll see a prompt telling you how to open the overlay. Its the only place you'll see that uses gradient text. I decided to use it here as a callback to the Gemini website, but also because it stands out as the main thing for you to focus on.
+When you first open Latent Writer, you'll see a prompt telling you how to open the overlay. Its the only place you'll see that uses gradient text. I decided to use it here as a callback to the Gemini website, but also because it stands out, making it the main thing for you to focus on.
 
 ![a screenshot showing the gradient text in the first run prompt](./img-first-run.png)
 
-The first run sequence was highly inspired by The Browser Company's Arc Browser. I don't think I've seen another application have such an amazing startup sequence. With how nice Latent Writer's shader background ended up looking, I wanted to capture the same feeling. So, instead of it automatically opening, I wanted you press the hotkey with the anticipation of the program doing something, and then being surprised with it doing something a native program wouldn't usually do.
+The first run sequence was highly inspired by The Browser Company's Arc Browser. I don't think I've seen another application have such an amazing first run startup sequence. With how nice Latent Writer's shader background ended up looking, I wanted to capture the same feeling. So, instead of it automatically opening, I wanted you press the hotkey with the anticipation of the program doing something, and then being surprised with it doing something a native program wouldn't usually do.
 
 ## Iterations
 
@@ -98,8 +100,8 @@ I think a more formal AppState class would be useful to have. As it stands passi
 
 ## Summary
 
-I am happy with how this project turned out. It effectively addresses all the pain points I had with my previous experience of getting writing suggestions. Opting for an overlay makes these suggestion as readily available as possible, which is great when your mind is focused on just the writing at hand.
+I am happy with how this project turned out. It effectively addresses all the pain points I had with my previous experience of getting writing suggestions. Opting for an overlay really did make the application very readily available and let me keep my mind on writing, instead of taking a detour to open another website.
 
-I'm generally just happy with how everything was tied together. I always put attention into every detail to make things look nice, but with Latent Writer I really put explicit intention into every detail and interaction.
+I'm generally just happy with how everything was tied together. I always put attention into every detail to make things look nice, but with Latent Writer I really put deliberate intention into every detail and interaction.
 
 I really recommend giving the project and download and seeing it run on your desktop. It just looks so nice!
